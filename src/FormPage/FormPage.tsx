@@ -183,7 +183,7 @@ function validate(formData, errors, schema) {
     .filter((key) => !!schema.properties[key].word_count)
     .forEach((key) => {
       const wordCount = schema.properties[key].word_count;
-      if (formData[key] && formData[key].split(/\s+/g).length > wordCount) {
+      if (formData[key] && formData[key].split(/[\s]+/).filter(function (el) {return el !== '';}).length > wordCount) {
         errors[key].addError(`Response cannot exceed ${wordCount} words`);
       }
     });
