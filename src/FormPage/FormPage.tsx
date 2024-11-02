@@ -119,7 +119,7 @@ const TextareaWordCountingWidget = (props) => {
   } = props;
 
   const showWordCount = !!schema.word_count;
-  const wordCount = value ? value.split(/\s+/g).length : 0;
+  const wordCount = value.split(/[\s]+/).filter(function (el) {return el !== '';}).length;
 
   const _onChange = ({ target: { value } }) => {
     return onChange(value === "" ? options.emptyValue : value);
