@@ -119,7 +119,7 @@ const TextareaWordCountingWidget = (props) => {
   } = props;
 
   const showWordCount = !!schema.word_count;
-  const wordCount = value ? value.split(/\s+/g).length : 0;
+  const wordCount = value ? value.split(/[\s]+/).filter(el => el !== '').length : 0;
 
   const _onChange = ({ target: { value } }) => {
     return onChange(value === "" ? options.emptyValue : value);
@@ -183,7 +183,7 @@ function validate(formData, errors, schema) {
     .filter((key) => !!schema.properties[key].word_count)
     .forEach((key) => {
       const wordCount = schema.properties[key].word_count;
-      if (formData[key] && formData[key].split(/\s+/g).length > wordCount) {
+      if (formData[key] && formData[key].split(/[\s]+/).filter(el => el !== '').length > wordCount) {
         errors[key].addError(`Response cannot exceed ${wordCount} words`);
       }
     });
