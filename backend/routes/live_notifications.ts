@@ -37,7 +37,7 @@ export async function getEventSubscriptions(req: Request, res: Response) {
   const endpoint = req.query.endpoint;
 
   if (endpoint == null) {
-    return res.status(400).send('Invalid subscription');
+    return res.status(400).json({ error: 'Invalid subscription' });
   }
 
   const events = await getSubscriptions(endpoint);
