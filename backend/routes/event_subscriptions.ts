@@ -1,22 +1,10 @@
+// Push notifications for TreeHacks Live
+
 import { Request, Response } from 'express';
 import { PushSubscription } from 'web-push';
 import axios from 'axios';
 import LiveNotificationSubscription from '../models/LiveNotificationSubscription';
-
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  start_time: string;
-  end_time: string;
-  location: string;
-  tags: string[];
-  updated_at: string;
-}
-
-interface EventiveResponse {
-  events: Event[];
-}
+import { EventiveResponse } from '../services/live_notifications';
 
 const EVENTS_API_URL = `https://api.eventive.org/event_buckets/${process.env.EVENTIVE_EVENT_BUCKET}/events?api_key=${process.env.EVENTIVE_API_KEY}`;
 
