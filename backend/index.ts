@@ -26,7 +26,7 @@ import {
   setApplicationInfo,
   submitApplicationInfo,
 } from "./routes/application_info";
-import {createEventPushSubscription, deleteEventPushSubscription, getEventSubscriptions} from "./routes/event_subscriptions"
+import { createEventPushSubscription, deleteEventPushSubscription, getEventSubscriptions } from "./routes/event_subscriptions"
 import { getMeetInfo, setMeetInfo } from "./routes/meet_info";
 import { getUsedMeals, setUsedMeals } from "./routes/used_meals";
 import { getWorkshopList, setWorkshopList } from "./routes/workshop_info";

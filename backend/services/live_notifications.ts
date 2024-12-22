@@ -66,6 +66,9 @@ export default class LiveNotificationsService {
     const events = req.data.events;
     this.events = events;
 
+    // Clear the existing notification queue
+    this.notificationQueue = [];
+
     // Put all future events into the queue
     const futureEvents = events.filter(
       (evt) => new Date(evt.start_time) > new Date()
