@@ -27,11 +27,13 @@ import {
   submitApplicationInfo,
 } from "./routes/application_info";
 import { getMeetInfo, setMeetInfo } from "./routes/meet_info";
-import { getUsedMeals, setUsedMeals } from "./routes/used_meals";
+import { getMealInfo, setMealInfo } from "./routes/meal_info";
 import { getWorkshopList, setWorkshopList } from "./routes/workshop_info";
-import { getCheckIn, setCheckIn } from "./routes/check_in";
+import { getCheckInInfo, setCheckInInfo } from "./routes/check_in_info";
+import { getHardwareInfo, setHardwareInfo } from "./routes/hardware_info";
 import { addTeammate, getTeamInfo, removeTeammate, setTeamInfo } from "./routes/team_info";
 import { getSubmitInfo, setSubmitInfo } from "./routes/submit_info";
+import { getAllForms } from "./routes/forms";
 import { getUserDetail } from "./routes/user_detail";
 import { getUserList, getUserStats, getMeetList } from "./routes/user_list";
 import {
@@ -178,10 +180,12 @@ authenticatedRoute.post(
 );
 authenticatedRoute.get("/users/:userId/forms/meet_info", getMeetInfo);
 authenticatedRoute.put("/users/:userId/forms/meet_info", setMeetInfo);
-authenticatedRoute.get("/users/:userId/forms/used_meals", getUsedMeals);
-authenticatedRoute.put("/users/:userId/forms/used_meals", setUsedMeals);
-authenticatedRoute.get("/users/:userId/forms/check_in", getCheckIn);
-authenticatedRoute.put("/users/:userId/forms/check_in", setCheckIn);
+authenticatedRoute.get("/users/:userId/forms/meal_info", getMealInfo);
+authenticatedRoute.put("/users/:userId/forms/meal_info", setMealInfo);
+authenticatedRoute.get("/users/:userId/forms/check_in_info", getCheckInInfo);
+authenticatedRoute.put("/users/:userId/forms/check_in_info", setCheckInInfo);
+authenticatedRoute.get("/users/:userId/forms/hardware_info", getHardwareInfo);
+authenticatedRoute.put("/users/:userId/forms/hardware_info", setHardwareInfo);
 authenticatedRoute.get("/users/:userId/forms/submit_info", getSubmitInfo);
 authenticatedRoute.put("/users/:userId/forms/submit_info", setSubmitInfo);
 authenticatedRoute.get("/users/:userId/forms/team_info", getTeamInfo);
@@ -194,6 +198,7 @@ authenticatedRoute.put("/users/:userId/forms/remove_teammate", removeTeammate);
 // What permission should this one be?
 authenticatedRoute.get("/users/:userId/status", getApplicationStatus);
 authenticatedRoute.get("/users/:userId", getUserDetail);
+authenticatedRoute.get("/users/:userId/forms", getAllForms);
 
 // Room reservations
 authenticatedRoute.get("/rooms", getRooms);

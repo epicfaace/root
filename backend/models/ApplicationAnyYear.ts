@@ -4,11 +4,12 @@ import { IApplication } from "./Application.d"
 import applicationInfoSchema from "./applicationInfoSchema";
 import adminInfoSchema from "./adminInfoSchema";
 import meetInfoSchema from "./meetInfoSchema";
-import usedMealsSchema from "./usedMealsSchema";
+import mealInfoSchema from "./mealInfoSchema";
 import checkInSchema from "./checkInSchema";
 import teamInfoSchema from "./teamInfoSchema";
 import workshopInfoSchema from "./workshopInfoSchema";
 import submitInfoSchema from "./submitInfoSchema";
+import hardwareInfoSchema from "./hardwareInfoSchema";
 import reviewSchema from "./reviewSchema";
 import { STATUS, TRANSPORTATION_STATUS } from "../constants";
 import {values} from "lodash";
@@ -20,10 +21,11 @@ export const applicationSchema: Schema = new mongoose.Schema({
         "application_info": applicationInfoSchema,
         "transportation": transportationInfoSchema,
         "meet_info": meetInfoSchema,
-        "used_meals": usedMealsSchema,
-        "check_in": checkInSchema,
+        "meal_info": mealInfoSchema,
+        "check_in_info": checkInSchema,
         "team_info": teamInfoSchema,
         "workshop_info": workshopInfoSchema,
+        "hardware_info": hardwareInfoSchema,
         "submit_info": submitInfoSchema
     },
     "admin_info": adminInfoSchema, // Only editable by admin.

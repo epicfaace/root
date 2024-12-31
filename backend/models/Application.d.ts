@@ -53,8 +53,8 @@ export interface ITransportationInfo {
   [e: string]: any;
 }
 
-export interface IUsedMeals {
-  mealList?: String;
+export interface IMealInfo {
+  usedMeals?: [String];
 }
 
 export interface ITeamInfo {
@@ -62,11 +62,13 @@ export interface ITeamInfo {
 }
 
 export interface IWorkshopInfo {
-  workshopList?: String;
+  attendedWorkshops?: [String];
 }
 
-export interface ICheckIn {
-  checkInStatus?: Boolean;
+export interface ICheckInInfo {
+  checkedIn?: Boolean;
+  checkedInBy?: String;
+  checkedInAt?: Date;
 }
 
 export interface IMeetInfo {
@@ -98,6 +100,15 @@ export interface ISubmitInfo {
   url?: String;
 }
 
+export interface IHardwareInfo {
+  checkedOutBy?: String;
+  checkedOutAt?: Date;
+  pendingReturn?: Boolean;
+  returnedAt?: Date;
+  returnedBy?: String;
+  hardwareList?: String;
+}
+
 export interface IApplication extends Document {
   forms: {
     // can only be modified by user/editors
@@ -105,10 +116,11 @@ export interface IApplication extends Document {
     transportation: ITransportationInfo;
     meet_info: IMeetInfo;
     submit_info: ISubmitInfo;
-    used_meals: IUsedMeals;
-    check_in: ICheckIn;
+    meal_info: IMealInfo;
+    check_in_info: ICheckInInfo;
     team_info: ITeamInfo;
     workshop_info: IWorkshopInfo;
+    hardware_info: IHardwareInfo;
     // we can conceivably add additional forms here.
   };
   admin_info: {

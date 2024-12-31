@@ -33,6 +33,13 @@ export async function getApplicationAttribute(
   getter: (e: IApplication) => any,
   createIfNotFound = false
 ) {
+  // prevent non-admins from viewing applications
+  const groups = res.locals.user["cognito:groups"] || [];
+  const canView = groups.includes("admin") || groups.includes("organizers_current");
+  if (!canView && res.locals.user.sub !== req.params.userId) {
+    return res.status(403).send("You do not have access to view this application");
+  }
+
   let application: IApplication | null = await Application.findOne(
     { "user.id": req.params.userId },
     { __v: 0, reviews: 0 },
@@ -69,6 +76,13 @@ export async function setApplicationAttribute(
   getter: (e: IApplication) => any = (e) => e,
   considerDeadline = false
 ) {
+  // prevent non-admins from viewing other applications
+  const groups = res.locals.user["cognito:groups"] || [];
+  const canEdit = groups.includes("admin") || groups.includes("organizers_current");
+  if (!canEdit && res.locals.user.sub !== req.params.userId) {
+    return res.status(403).send("You do not have access to edit this application");
+  }
+
   const application: IApplication | null = await Application.findOne(
     { "user.id": req.params.userId },
     { __v: 0, reviews: 0 }

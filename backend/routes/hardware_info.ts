@@ -2,17 +2,17 @@ import { Request, Response } from 'express';
 import { getApplicationAttribute, setApplicationAttribute } from "./common";
 import { IApplication } from '../models/Application.d';
 
-export function getCheckIn(req: Request, res: Response) {
+export function getHardwareInfo(req: Request, res: Response) {
     return getApplicationAttribute(req, res, (e: IApplication) => {
-        return e.forms.check_in || {};
+        return e.forms.hardware_info || {};
     }, true);
 }
 
-export function setCheckIn(req: Request, res: Response) {
+export function setHardwareInfo(req: Request, res: Response) {
     return setApplicationAttribute(req, res,
         (e: IApplication) => {
-            e.forms.check_in = req.body;
+            e.forms.hardware_info = req.body;
         },
-        e => e.forms.check_in
+        e => e.forms.hardware_info
     );
-}
+} 
