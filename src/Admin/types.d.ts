@@ -1,5 +1,5 @@
 import { IFormState } from "../store/form/types";
-import { IAdminState } from "src/store/admin/types";
+import { IAdminState } from '../store/admin/types';
 import { getApplicationList, getExportedApplications } from "src/store/admin/actions";
 import { IBaseState } from "src/store/base/types";
 
@@ -50,6 +50,11 @@ export interface IBulkImportHacksProps extends IAdminState {
     setBulkImportHacksFloor: (e: number) => void
 }
 
+export interface ILiveNotificationsProps extends IAdminState {
+    getLiveStats: () => void,
+    sendNotification: () => void,
+    setNotificationData: (data: {title: string, body: string}) => void,
+}
 export interface IReactTableHeader {
     Header?: string,
     id?: string,

@@ -26,7 +26,7 @@ import {
   setApplicationInfo,
   submitApplicationInfo,
 } from "./routes/application_info";
-import { createEventPushSubscription, deleteEventPushSubscription, getEventSubscriptions } from "./routes/event_subscriptions"
+import { createEventPushSubscription, deleteEventPushSubscription, getEventSubscriptions, getLiveStats, sendLiveNotification } from "./routes/event_subscriptions"
 import { getMeetInfo, setMeetInfo } from "./routes/meet_info";
 import { getUsedMeals, setUsedMeals } from "./routes/used_meals";
 import { getWorkshopList, setWorkshopList } from "./routes/workshop_info";
@@ -155,10 +155,12 @@ apiRouter.get("/leaderboard", [anonymousRoute], leaderboard);
 apiRouter.post("/mentor_create", [anonymousRoute], mentorCreate);
 apiRouter.post("/sponsor/admin", createAdmin);
 
-// Live push notifications, no auth required
+// Live push notifications
 apiRouter.post('/live/event_subscriptions', createEventPushSubscription);
 apiRouter.delete('/live/event_subscriptions', deleteEventPushSubscription);
 apiRouter.get('/live/event_subscriptions', getEventSubscriptions);
+authenticatedRoute.get("/live/stats", [adminRoute], getLiveStats);
+authenticatedRoute.post("/live/notifications", [adminRoute], sendLiveNotification);
 
 apiRouter.use("/", authenticatedRoute);
 
