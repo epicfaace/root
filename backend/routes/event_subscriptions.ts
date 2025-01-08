@@ -1,7 +1,7 @@
 // Push notifications for TreeHacks Live
 
 import { Request, Response } from 'express';
-import { PushSubscription } from 'web-push';
+import webpush, { PushSubscription } from 'web-push';
 import axios from 'axios';
 import { EventiveResponse } from '../services/live_notifications';
 import webpush from 'web-push';
