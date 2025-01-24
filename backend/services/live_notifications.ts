@@ -113,6 +113,11 @@ export default class LiveNotificationsService {
     const nextNotification = this.notificationQueue[0];
     const delay = nextNotification.time - Date.now();
 
+    // If the event is more than 20 days in the future, don't schedule the notification, or the timeout will run instantly
+    if (delay > 20 * 24 * 60 * 60 * 1000) {
+      return;
+    }
+
     this.timeoutId = setTimeout(() => {
       this.sendNotificationsForEvent(nextNotification);
 

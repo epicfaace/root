@@ -1,16 +1,16 @@
 import React from 'react';
 import { Route, Switch, Redirect } from 'react-router-dom';
-import { RoutedTabs, NavTab } from 'react-router-tabs';
- 
+import { NavTab } from 'react-router-tabs';
 import 'react-router-tabs/styles/react-router-tabs.scss';
 import Stats from './Stats';
 import AdminTable from './AdminTable';
 import BulkChange from './BulkChange';
- import BulkCreate from './BulkCreate';
+import BulkCreate from './BulkCreate';
 import BulkImportHacks from './BulkImportHacks';
 import HackTable from './HackTable';
 import JudgeTable from './JudgeTable';
 import JudgeLeaderboard from './JudgeLeaderboard';
+import Live from './LiveNotifications';
 
 const Admin = ({ match }) => {
   return (
@@ -23,20 +23,32 @@ const Admin = ({ match }) => {
       <NavTab to={`${match.path}/bulkcreate`}>Bulk Create Users</NavTab>
       {/* <NavTab to={`${match.path}/bulk_import_hacks`}>Bulk Import Hacks</NavTab> */}
       <NavTab to={`${match.path}/stats`}>Application Stats</NavTab>
+      <NavTab to={`${match.path}/live`}>Live Notifications</NavTab>
 
       <Switch>
-        <Route exact path={`${match.path}`} render={() => <Redirect replace to={`${match.path}/table`} />} />
+        <Route
+          exact
+          path={`${match.path}`}
+          render={() => <Redirect replace to={`${match.path}/table`} />}
+        />
         <Route path={`${match.path}/table`} component={AdminTable} />
         <Route path={`${match.path}/stats`} component={Stats} />
         <Route path={`${match.path}/bulkchange`} component={BulkChange} />
         <Route path={`${match.path}/bulkcreate`} component={BulkCreate} />
         <Route path={`${match.path}/hack_table`} component={HackTable} />
-        <Route path={`${match.path}/bulk_import_hacks`} component={BulkImportHacks} />
+        <Route
+          path={`${match.path}/bulk_import_hacks`}
+          component={BulkImportHacks}
+        />
         <Route path={`${match.path}/judge_table`} component={JudgeTable} />
-        <Route path={`${match.path}/judge_leaderboard`} component={JudgeLeaderboard} />
+        <Route
+          path={`${match.path}/judge_leaderboard`}
+          component={JudgeLeaderboard}
+        />
+        <Route path={`${match.path}/live`} component={Live} />
       </Switch>
     </div>
   );
 };
- 
+
 export default Admin;

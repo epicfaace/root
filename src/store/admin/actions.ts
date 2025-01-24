@@ -38,6 +38,16 @@ export const setApplicationStats = (applicationStats) => ({
   applicationStats,
 });
 
+export const setLiveStats = (liveStats) => ({
+  type: "SET_LIVE_STATS",
+  liveStats,
+});
+
+export const setLiveNotificationData = (data: { title: string, body: string }) => ({
+  type: "SET_LIVE_NOTIFICATION_DATA",
+  data,
+});
+
 export const getApplicationList = (tableState: IReactTableState) => (
   dispatch,
   getState
@@ -389,6 +399,39 @@ export const getApplicationStats = () => (dispatch, getState) => {
       console.error(e);
       dispatch(loadingEnd());
       alert("Error getting application stats " + e);
+    });
+};
+
+export const getLiveStats = () => (dispatch, getState) => {
+  dispatch(loadingStart());
+  return API.get("treehacks", `/live/stats`, {})
+    .then((e) => {
+      dispatch(setLiveStats(e));
+      dispatch(loadingEnd());
+    })
+    .catch((e) => {
+      console.error(e);
+      dispatch(loadingEnd());
+      alert("Error getting live stats " + e);
+    });
+};
+
+export const sendLiveNotification = () => (dispatch, getState) => {
+  dispatch(loadingStart());
+  const { title, body } = (getState().admin as IAdminState).liveNotification;
+  return API.post("treehacks", `/live/notifications`, {
+    body: {
+      title,
+      body,
+    },
+  })
+    .then((e) => {
+      dispatch(loadingEnd());
+    })
+    .catch((e) => {
+      console.error(e);
+      dispatch(loadingEnd());
+      alert("Error sending notification " + e);
     });
 };
 

@@ -5,6 +5,11 @@ const initialState: IAdminState = {
   applicationList: [],
   pages: null,
   applicationStats: null,
+  liveStats: null,
+  liveNotification: {
+    title: "",
+    body: ""
+  },
   selectedForm: null,
   applicationEmails: null,
   exportedApplications: null,
@@ -48,6 +53,16 @@ const admin: Reducer<any> = (state: any = initialState, action): any => {
       return {
         ...state,
         applicationStats: action.applicationStats
+      };
+    case "SET_LIVE_STATS":
+      return {
+        ...state,
+        liveStats: action.liveStats
+      };
+    case "SET_LIVE_NOTIFICATION_DATA":
+      return {
+        ...state,
+        liveNotification: action.data
       };
     case "SET_BULK_CHANGE_STATUS":
       return {
