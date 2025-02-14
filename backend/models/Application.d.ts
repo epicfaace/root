@@ -55,6 +55,7 @@ export interface ITransportationInfo {
 
 export interface IMealInfo {
   usedMeals?: [String];
+  dietaryRestrictions?: String;
 }
 
 export interface ITeamInfo {
@@ -69,6 +70,7 @@ export interface ICheckInInfo {
   checkedIn?: Boolean;
   checkedInBy?: String;
   checkedInAt?: Date;
+  tshirtSize?: String;
 }
 
 export interface IMeetInfo {
@@ -106,7 +108,7 @@ export interface IHardwareInfo {
   pendingReturn?: Boolean;
   returnedAt?: Date;
   returnedBy?: String;
-  hardwareList?: String;
+  hardwareList?: String[];
 }
 
 export interface IApplication extends Document {

@@ -60,12 +60,6 @@ import {
 } from "./routes/transportation_info";
 import { getUserResumes } from "./routes/user_resumes";
 import { importHacks } from "./routes/hacks/hacks_import";
-import {
-  reviewNextHack,
-  getJudgeLeaderboard,
-  getJudgeStats,
-  rateHack,
-} from "./routes/hacks/judging";
 import { getHackList, editHack } from "./routes/hacks/hacks_list";
 import { getJudgeList, editJudge } from "./routes/hacks/judges";
 import { getAnnouncements } from "./routes/announcements";
@@ -85,6 +79,7 @@ import {
   leaveTeam,
   getUserTeamData,
 } from "./routes/teams";
+import {getAppleId, getGoogleId} from "./routes/digital_id";
 import {
   uploadSponsorLogo,
   updateSponsor,
@@ -98,6 +93,20 @@ import {
   createAdmin
 } from "./routes/sponsors"
 import LiveNotificationsService from "./services/live_notifications";
+import {
+  getJudgeForms,
+  getJudgeMealInfo,
+  setJudgeMealInfo,
+  getJudgeCheckInInfo,
+  setJudgeCheckInInfo 
+} from "./routes/judge_forms";
+import { 
+  getMentorForms,
+  getMentorMealInfo,
+  setMentorMealInfo,
+  getMentorCheckInInfo,
+  setMentorCheckInInfo 
+} from "./routes/mentor_forms";
 
 // Start the notification service
 const notificationService = new LiveNotificationsService();
@@ -207,6 +216,14 @@ authenticatedRoute.get("/users/:userId/forms/workshop_info", getWorkshopList);
 authenticatedRoute.put("/users/:userId/forms/workshop_info", setWorkshopList);
 authenticatedRoute.put("/users/:userId/forms/add_teammate", addTeammate);
 authenticatedRoute.put("/users/:userId/forms/remove_teammate", removeTeammate);
+authenticatedRoute.get(
+  "/users/:userId/:fullName/getAppleID",
+  getAppleId
+);
+authenticatedRoute.get(
+  "/users/:userId/:fullName/getGoogleID",
+  getGoogleId
+);
 
 // What permission should this one be?
 authenticatedRoute.get("/users/:userId/status", getApplicationStatus);
@@ -275,15 +292,19 @@ authenticatedRoute.get(
   reviewNextApplication
 );
 
-// Judging routes:
-authenticatedRoute.get(
-  "/judging/leaderboard",
-  [judgeRoute],
-  getJudgeLeaderboard
-);
-authenticatedRoute.get("/judging/stats", [judgeRoute], getJudgeStats);
-authenticatedRoute.post("/judging/rate", [judgeRoute], rateHack);
-authenticatedRoute.get("/judging/next_hack", [judgeRoute], reviewNextHack);
+// Judge form routes
+authenticatedRoute.get("/judges/:userId/forms", getJudgeForms);
+authenticatedRoute.get("/judges/:userId/forms/meal_info", getJudgeMealInfo);
+authenticatedRoute.put("/judges/:userId/forms/meal_info", setJudgeMealInfo);
+authenticatedRoute.get("/judges/:userId/forms/check_in_info", getJudgeCheckInInfo);
+authenticatedRoute.put("/judges/:userId/forms/check_in_info", setJudgeCheckInInfo);
+
+// Mentor form routes  
+authenticatedRoute.get("/mentors/:userId/forms", getMentorForms);
+authenticatedRoute.get("/mentors/:userId/forms/meal_info", getMentorMealInfo);
+authenticatedRoute.put("/mentors/:userId/forms/meal_info", setMentorMealInfo);
+authenticatedRoute.get("/mentors/:userId/forms/check_in_info", getMentorCheckInInfo);
+authenticatedRoute.put("/mentors/:userId/forms/check_in_info", setMentorCheckInInfo);
 
 app.use("/api", apiRouter);
 
