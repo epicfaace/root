@@ -10,3 +10,4 @@ pymongo==3.9.0
 python-dotenv==0.10.5
 slackclient==2.5.0
 yarl==1.8.1
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
