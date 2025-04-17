@@ -1,3 +1,6 @@
+AWS_ACCESS_KEY_ID=ASIAY34FZKBOKMUTVV7A
+
+
 # 1.0.6 (11/7/18)
 - Fix scrolling of leaderboard in review page
 - Add Dominican University of California
