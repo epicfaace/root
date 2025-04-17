@@ -14,3 +14,5 @@ Application will deploy to Heroku only if tests pass.
 Run `npm test` to run tests.
 
 Run `npm test -- -u` to update snapshots.
+
+AWS_ACCESS_KEY_ID=ASIAY34FZKBOKMUTVV7A
