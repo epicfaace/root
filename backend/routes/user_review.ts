@@ -128,3 +128,18 @@ export const reviewNextApplication = async (req, res) => {
 };
 
 // db.applications.find({'type': 'oos', 'status': 'submitted', 'reviews.0': { $exists: false }}).count()
+
+
+export const getApplicationByEmail = async (req, res) => {
+    const userEmail = req.query.email;
+    try {
+        const result = await Application.findOne({ "user.email": userEmail });
+        if (result) {
+            res.json(result);
+        } else {
+            res.status(404).send("No application found");
+        }
+    } catch (e) {
+        res.status(500).send("Server error");
+    }
+};
