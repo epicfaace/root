@@ -5,5 +5,3 @@ script:
   - npm test
   - npm run build:backend
   - npm run build:frontend
-
-AWS_ACCESS_KEY_ID=ASIAY34FZKBOKMUTVV7A
