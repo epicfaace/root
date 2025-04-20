@@ -1,0 +1,60 @@
+---
+description: Secure email template generation with proper HTML content sanitization
+globs: ["backend/services/send_email.ts", "util/*.html"]
+alwaysApply: false
+---
+
+## Secure Email Template Guidelines
+
+When working with HTML email templates, especially those that incorporate user-provided data, follow these practices to prevent potential XSS vulnerabilities:
+
+### HTML Content Sanitization
+
+- Always sanitize user-provided data before including it in HTML email templates
+- Use encoding functions to escape special characters
+- Consider using template engines with automatic escaping
+
+```typescript
+// UNSAFE - Don't do this
+const emailHtml = `
+<html>
+  <body>
+    <p>Hi ${username},</p>
+    <p>${userMessage}</p>
+  </body>
+</html>
+`;
+
+// SAFE - Do this instead
+import { escapeHtml } from 'some-html-sanitizer';
+
+const emailHtml = `
+<html>
+  <body>
+    <p>Hi ${escapeHtml(username)},</p>
+    <p>${escapeHtml(userMessage)}</p>
+  </body>
+</html>
+`;
+```
+
+### Avoiding Sensitive Data in Emails
+
+- Never include passwords, authentication tokens, or other sensitive data directly in emails
+- For reset links or verification, use secure one-time tokens
+- If credentials must be shared (like temporary passwords), instruct users to change them immediately
+
+### Template Structure
+
+- Separate templates from code when possible
+- Use consistent structure for all email templates
+- Include proper email headers and footers
+
+### Testing Email Templates
+
+- Test templates with special characters and edge cases
+- Validate HTML structure
+- Check rendering in various email clients
+
+@backend/services/send_email.ts
+@util/verification_email.html

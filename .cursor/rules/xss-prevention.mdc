@@ -1,0 +1,59 @@
+---
+description: Cross-Site Scripting (XSS) prevention guidelines for React components
+globs: ["src/**/*.tsx", "src/**/*.jsx"]
+alwaysApply: false
+---
+
+## XSS Prevention in React Components
+
+React provides some protection against XSS through automatic escaping, but certain practices can bypass this protection. Follow these guidelines to prevent XSS vulnerabilities:
+
+### Avoid Unsafe React Features
+
+- **Never use `dangerouslySetInnerHTML` without proper sanitization**
+- If you must use it, always sanitize the HTML content with a library like DOMPurify
+- Consider using safer alternatives like Markdown rendering libraries
+
+```tsx
+// UNSAFE - Don't do this
+<div dangerouslySetInnerHTML={{ __html: userProvidedContent }} />
+
+// SAFE - Do this instead
+import DOMPurify from 'dompurify';
+
+<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(userProvidedContent) }} />
+
+// PREFERRED - Use markdown libraries when possible
+<ReactMarkdown>{userProvidedContent}</ReactMarkdown>
+```
+
+### URL Handling
+
+- Validate URLs before using them in links, especially user-provided URLs
+- Use relative URLs when possible
+- For dynamic URLs, validate the protocol to prevent `javascript:` URLs
+
+```tsx
+// UNSAFE - Don't do this
+<a href={userProvidedUrl}>Click here</a>
+
+// SAFE - Do this instead
+<a href={validateUrl(userProvidedUrl)}>Click here</a>
+
+// URL validation function
+function validateUrl(url: string): string {
+  // Only allow http:, https:, mailto: protocols
+  const pattern = /^(https?:\/\/|mailto:|\/)/i;
+  if (pattern.test(url)) {
+    return url;
+  }
+  return '#';
+}
+```
+
+### Content Security Policy
+
+- Use a Content Security Policy to restrict execution of unauthorized scripts
+- Configure CSP headers in the server response
+
+@src/components/YourComponent.tsx

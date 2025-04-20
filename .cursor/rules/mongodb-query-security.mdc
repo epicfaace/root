@@ -1,0 +1,69 @@
+---
+description: Secure MongoDB/Mongoose query practices to prevent NoSQL injection
+globs: ["backend/**/*.ts"]
+alwaysApply: false
+---
+
+## Secure MongoDB Query Practices
+
+MongoDB/Mongoose queries can be vulnerable to NoSQL injection if user input is not properly validated and sanitized. Follow these guidelines to prevent NoSQL injection vulnerabilities:
+
+### Validation and Sanitization
+
+- Never pass raw user input directly to MongoDB queries
+- Validate and sanitize all user-provided parameters before using them in queries
+- Use Mongoose schema validation to enforce data integrity
+
+```typescript
+// UNSAFE - Don't do this
+let filter = JSON.parse(req.query.filter || "{}");
+let query = Model.find(filter);
+
+// SAFE - Do this instead
+let filterInput = JSON.parse(req.query.filter || "{}");
+let filter = {};
+
+// Only allow specific fields with proper validation
+const allowedFields = ['name', 'status', 'createdAt'];
+for (const field of allowedFields) {
+  if (field in filterInput) {
+    if (typeof filterInput[field] === 'string') {
+      // Safe string operations
+      filter[field] = { $regex: `^${escapeRegExp(filterInput[field])}`, $options: 'i' };
+    } else if (typeof filterInput[field] === 'boolean' || typeof filterInput[field] === 'number') {
+      filter[field] = filterInput[field];
+    }
+  }
+}
+
+let query = Model.find(filter);
+```
+
+### Avoid Risky Operators
+
+- Be cautious with operators like `$where`, `$expr`, and `$function` that can execute JavaScript
+- Never allow users to control these operators directly
+- Use projection to limit returned fields when necessary
+
+### Query Construction Helpers
+
+- Use query builder patterns to create safe, validated queries
+- Create helper functions for common query patterns
+- Whitelist allowed query operators and field names
+
+```typescript
+// Example helper function for safe query construction
+function buildSafeQuery(userInput: any, allowedFields: string[]) {
+  const safeQuery: Record<string, any> = {};
+  
+  for (const field of allowedFields) {
+    if (field in userInput) {
+      safeQuery[field] = userInput[field];
+    }
+  }
+  
+  return safeQuery;
+}
+```
+
+@backend/routes/common.ts

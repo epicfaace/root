@@ -1,0 +1,62 @@
+---
+description: Secure AWS S3 file operations and path handling
+globs: ["backend/services/file_actions.ts", "backend/utils/file_plugin.ts", "backend/routes/**/*.ts"]
+alwaysApply: false
+---
+
+## Secure AWS S3 File Operations
+
+When working with AWS S3 and file operations, follow these guidelines to prevent path traversal and maintain secure file access:
+
+### S3 Key Construction
+
+- Always sanitize and validate components used in S3 key construction
+- Avoid using raw user input directly in key paths
+- Use path normalization for keys constructed from multiple components
+
+```typescript
+// UNSAFE - Don't do this
+const key = userId + "/" + filename;
+
+// SAFE - Do this instead
+const sanitizedUserId = sanitizePathComponent(userId);
+const sanitizedFilename = sanitizePathComponent(filename);
+const key = `${HACKATHON_YEAR_STRING}/${sanitizedUserId}/${sanitizedFilename}`;
+
+// Path component sanitization
+function sanitizePathComponent(component: string): string {
+  // Remove path traversal sequences and invalid characters
+  return component
+    .replace(/\.\.\//g, '') // Remove path traversal sequences
+    .replace(/[^a-zA-Z0-9_.-]/g, '_'); // Replace invalid chars with underscore
+}
+```
+
+### File Type Validation
+
+- Validate file types before uploading to S3
+- Use content-type detection and validation
+- Implement file size limits
+
+### Access Control
+
+- Set appropriate S3 bucket policies
+- Use pre-signed URLs with expiration for temporary access
+- Implement proper IAM role permissions
+
+### Configuration and Environment Variables
+
+- Store AWS region and other config values in environment variables
+- Never hardcode AWS credentials or configuration
+- Use environment-specific configuration with proper defaults
+
+```typescript
+// UNSAFE - Don't do this
+AWS.config.update({ region: "us-east-1" });
+
+// SAFE - Do this instead
+AWS.config.update({ region: process.env.AWS_REGION || "us-east-1" });
+```
+
+@backend/services/file_actions.ts
+@backend/utils/file_plugin.ts

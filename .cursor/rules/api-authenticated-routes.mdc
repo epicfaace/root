@@ -1,0 +1,52 @@
+---
+description: Guidelines for implementing secure authentication in API routes
+globs: ["backend/routes/**/*.ts", "backend/router/**/*.ts"]
+alwaysApply: false
+---
+
+## API Route Authentication Guidelines
+
+When implementing new API routes, ensure proper authentication is applied to protect sensitive data and operations.
+
+### Authentication Middleware
+
+- Always use `authenticatedRoute` middleware for endpoints that access or modify user data
+- Use `adminRoute` middleware for administrative operations
+- Only use `anonymousRoute` for public endpoints that don't expose sensitive data
+
+### Authorization Checks
+
+- Validate that the authenticated user has permission to access the requested resource
+- For user-specific routes, verify that the `userId` parameter matches the authenticated user's ID
+- Include ownership validation in handlers for all resource operations
+
+```typescript
+// Example of proper route protection with authenticated middleware
+authenticatedRoute.get("/users/:userId/forms/team_info", getTeamInfo);
+
+// Example of admin-only route protection
+apiRouter.post("/admin/user_bulk_create", [adminRoute], userBulkCreate);
+
+// Example of proper ownership validation in a route handler
+export async function getTeamInfo(req: Request, res: Response) {
+  // Ensure the user is only accessing their own data
+  if (req.params.userId !== res.locals.user.sub) {
+    return res.status(403).json({
+      success: false,
+      error: "Unauthorized access"
+    });
+  }
+  
+  // Proceed with the operation
+  // ...
+}
+```
+
+### JWT Token Validation
+
+- Always verify both the token validity AND appropriate permissions/scopes
+- Include checks for token expiration and proper audience
+- Don't rely solely on middleware for authorization
+
+@backend/router/authenticatedRoute.ts
+@backend/routes/common.ts

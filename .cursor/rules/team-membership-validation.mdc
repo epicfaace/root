@@ -1,0 +1,95 @@
+---
+description: Secure team management operations to prevent IDOR vulnerabilities
+globs: ["backend/routes/teams.ts", "backend/routes/team_info.ts", "backend/models/Team.ts"]
+alwaysApply: false
+---
+
+## Secure Team Membership Operations
+
+Team management operations are susceptible to Insecure Direct Object Reference (IDOR) vulnerabilities if not properly secured. Follow these guidelines when implementing team-related functionality:
+
+### Authorization Checks
+
+- Always verify that the authenticated user has permission to perform team operations
+- For joining/leaving teams, validate that the user has the appropriate permission
+- Include additional verification for sensitive operations (adding/removing members)
+
+```typescript
+// UNSAFE - Don't do this
+export async function joinTeam(req: Request, res: Response) {
+  let code = req.body.code;
+  let team = await Team.findOneAndUpdate(
+    { code: code },
+    { $push: { memberIds: req.params.userId } }
+  );
+  res.json({
+    success: true,
+    data: team,
+  });
+}
+
+// SAFE - Do this instead
+export async function joinTeam(req: Request, res: Response) {
+  // Verify user is accessing their own data
+  if (req.params.userId !== res.locals.user.sub) {
+    return res.status(403).json({
+      success: false,
+      error: "Cannot join team as another user"
+    });
+  }
+  
+  let code = req.body.code;
+  
+  // Validate team code
+  if (!code || typeof code !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid team code"
+    });
+  }
+  
+  // Check if team exists
+  let team = await Team.findOne({ code: code });
+  if (!team) {
+    return res.status(404).json({
+      success: false,
+      error: "Team not found"
+    });
+  }
+  
+  // Check membership limits
+  if (team.memberIds.length >= MAX_TEAM_SIZE) {
+    return res.status(400).json({
+      success: false,
+      error: "Team is full"
+    });
+  }
+  
+  // Update team membership
+  team = await Team.findOneAndUpdate(
+    { code: code },
+    { $addToSet: { memberIds: req.params.userId } }, // Prevent duplicate entries
+    { new: true }
+  );
+  
+  res.json({
+    success: true,
+    data: team,
+  });
+}
+```
+
+### Team ID and Code Validation
+
+- Validate team IDs and codes before processing
+- Use unpredictable team codes to prevent guessing
+- Implement rate limiting for team join attempts
+
+### Secure Query Construction
+
+- Use appropriate Mongoose/MongoDB operators for modifications
+- Prefer atomic operations for membership changes
+- Always retrieve updated documents after changes
+
+@backend/routes/teams.ts
+@backend/models/Team.ts
