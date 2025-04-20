@@ -1,0 +1,69 @@
+---
+description: Standards for React component implementation and state management
+globs: ["src/**/*.tsx", "src/**/*.jsx"]
+alwaysApply: false
+---
+
+## React Component Standards
+
+When implementing new React components or modifying existing ones, follow these standards for consistency and security:
+
+### Component Structure
+
+- Use functional components with hooks instead of class components
+- Keep components focused on a single responsibility
+- Extract reusable logic into custom hooks
+- Follow consistent naming conventions (PascalCase for components, camelCase for functions)
+
+```tsx
+// Preferred component structure
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import './ComponentName.scss';
+
+const ComponentName: React.FC<Props> = ({ prop1, prop2 }) => {
+  const [localState, setLocalState] = useState(initialValue);
+  const dispatch = useDispatch();
+  const storeData = useSelector(state => state.someSlice.data);
+  
+  useEffect(() => {
+    // Side effects
+  }, [dependencies]);
+  
+  const handleSomething = () => {
+    // Event handler logic
+  };
+  
+  return (
+    <div className="component-name">
+      {/* Component JSX */}
+    </div>
+  );
+};
+
+export default ComponentName;
+```
+
+### State Management
+
+- Use Redux for global state
+- Keep component state local when possible using useState
+- Follow the existing action/reducer patterns in store directories
+- Use useSelector and useDispatch hooks for Redux interaction
+
+### Styling
+
+- Use SCSS files for styling
+- Follow the existing BEM-like naming convention
+- Import stylesheets in the component file
+- Use theme variables for colors, spacing, and typography
+
+### Security Practices
+
+- Avoid using dangerouslySetInnerHTML (see xss-prevention rule)
+- Validate props and input data
+- Handle user input securely
+- Implement proper error handling and fallbacks
+
+@src/Dashboard/Dashboard.tsx
+@src/store/form/actions.ts

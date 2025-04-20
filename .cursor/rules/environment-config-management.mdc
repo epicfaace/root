@@ -1,0 +1,57 @@
+---
+description: Guidelines for secure environment configuration and credential management
+globs: ["backend/**/*.ts", "src/**/*.ts", "src/**/*.tsx"]
+alwaysApply: false
+---
+
+## Environment Configuration and Credential Management
+
+Properly managing configuration values and credentials is crucial for security. Follow these guidelines for all environment variables and configuration settings:
+
+### Environment Variables
+
+- Store all sensitive information in environment variables
+- Never hardcode credentials, API keys, or secrets in source code
+- Use a consistent pattern for accessing environment variables
+
+```typescript
+// UNSAFE - Don't do this
+const awsConfig = {
+  region: "us-east-1",
+  accessKeyId: "AKIAIOSFODNN7EXAMPLE",
+  secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+};
+
+// SAFE - Do this instead
+const awsConfig = {
+  region: process.env.AWS_REGION || "us-east-1",
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+};
+
+// Also include validation
+if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+  console.error("AWS credentials not properly configured!");
+}
+```
+
+### Configuration Values
+
+- Move all configuration values (even non-sensitive ones) to environment variables
+- Create environment-specific configuration files
+- Use sensible defaults only for non-sensitive configuration
+
+### Secrets Management
+
+- Use a secure secrets management system when possible
+- Rotate credentials regularly
+- Use different credentials for development, testing, and production
+
+### Test Data
+
+- Keep test credentials, IDs, and data in separate test configuration files
+- Never use production credentials in test environments
+- Mock external services in tests when possible
+
+@backend/services/auth_actions.ts
+@backend/constants.ts
