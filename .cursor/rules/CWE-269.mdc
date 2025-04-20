@@ -1,0 +1,135 @@
+---
+description: Guidance to prevent CWE-269 Improper Privilege Management
+ruleType: Agent Requested
+globs: ["**/backend/routes/**/*.{js,ts}", "**/router/**/*.{js,ts}"]
+---
+
+### CWE-269: Improper Privilege Management
+
+Improper Privilege Management occurs when an application does not properly assign, modify, track, or check privileges, allowing users to perform actions they should not be permitted to do.
+
+**Prevention Guidance:**
+- Implement the principle of least privilege (grant only the minimum necessary privileges)
+- Design clear role-based access control (RBAC) systems with well-defined roles
+- Enforce privilege separation between different parts of the application
+- Validate privileges on every sensitive operation, not just at the entry point
+- Implement proper access control checks for all protected resources
+- Ensure privilege changes are properly logged and audited
+- Use secure defaults (deny by default, require explicit permission)
+- Regularly review and update privileges as application needs change
+- Implement proper session management with correct privilege context
+
+```good_example
+// Role-based middleware for Express
+const ROLES = {
+  USER: 'user',
+  ADMIN: 'admin',
+  REVIEWER: 'reviewer',
+  SPONSOR: 'sponsor'
+};
+
+// Middleware to check roles
+function checkRole(allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // Check if user role is in allowed roles
+    if (Array.isArray(allowedRoles) && !allowedRoles.includes(req.user.role)) {
+      // Log unauthorized access attempt
+      logger.warn(`Unauthorized access attempt by user ${req.user.id} to ${req.originalUrl}`);
+      return res.status(403).json({ error: 'Insufficient privileges' });
+    }
+    
+    next();
+  };
+}
+
+// Implementation for admin features
+app.get('/api/admin/users', 
+  authenticateUser,                   // First authenticate
+  checkRole([ROLES.ADMIN]),           // Then check privileges
+  (req, res) => {
+    // Only admins can reach this code
+    // ...
+  }
+);
+
+// Object-level permission checking
+async function checkDocumentAccess(user, documentId, requiredPermission) {
+  const document = await Document.findById(documentId);
+  if (!document) return false;
+  
+  // Check document ownership
+  if (document.ownerId === user.id) return true;
+  
+  // Check document permissions
+  const permission = await Permission.findOne({
+    documentId: documentId,
+    userId: user.id,
+    permission: requiredPermission
+  });
+  
+  return !!permission;
+}
+
+// Using object-level permissions
+app.put('/api/documents/:id', authenticateUser, async (req, res) => {
+  try {
+    const hasAccess = await checkDocumentAccess(req.user, req.params.id, 'write');
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Insufficient privileges' });
+    }
+    
+    // Proceed with update...
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+```bad_example
+// VULNERABLE: No clear role separation
+app.get('/api/admin/users', authenticateUser, (req, res) => {
+  // VULNERABLE: No role check, any authenticated user can access admin data
+  // ...
+});
+
+// VULNERABLE: Relying on client-side role checking
+app.put('/api/documents/:id', authenticateUser, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+    
+    // VULNERABLE: No server-side permission validation, trusting client
+    if (req.body.isAdmin) {
+      // Update document...
+    }
+    
+    // VULNERABLE: No ownership verification
+    // Update document directly without checking ownership
+    // ...
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// VULNERABLE: Privilege escalation
+app.post('/api/users/:id/update-role', authenticateUser, async (req, res) => {
+  // VULNERABLE: No role verification for privilege change
+  const { role } = req.body;
+  
+  // VULNERABLE: Allows any authenticated user to change roles
+  await User.findByIdAndUpdate(req.params.id, { role });
+  
+  res.json({ success: true });
+});
+```
+
+**Looking at this codebase:**
+- Check routes and endpoints for proper privilege validation
+- Verify that admin routes are properly protected
+- Look for role-based access controls in authentication middleware
+- Ensure all user role changes are properly authorized
+- Check that object-level permissions are enforced (e.g., users can only edit their own data)
+- Verify that privilege escalation is not possible through API endpoints

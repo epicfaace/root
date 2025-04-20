@@ -1,0 +1,94 @@
+---
+description: Guidance to prevent CWE-476 NULL Pointer Dereference
+ruleType: Agent Requested
+globs: ["**/*.{c,cpp,h,hpp,js,ts}"]
+---
+
+### CWE-476: NULL Pointer Dereference
+
+NULL Pointer Dereference occurs when the program dereferences a pointer that it expects to be valid, but is actually NULL/null/undefined, typically causing a crash or unintended behavior.
+
+**Prevention Guidance:**
+- Always check pointers before dereferencing them
+- Initialize pointers to NULL/null/undefined when declared if not immediately assigned
+- Use defensive programming to handle potential NULL/null/undefined values
+- Consider using safe dereferencing patterns like the Optional pattern or nullish coalescing
+- Implement proper error handling for cases where NULL/null/undefined is encountered
+- Use static analysis tools to identify potential null dereferences
+- In languages with exceptions, catch and handle NullPointerException or similar
+- In TypeScript, leverage strict null checking with the `strictNullChecks` compiler flag
+
+```good_example
+// C/C++ example with proper NULL checking
+void processData(Data* data) {
+  // Check pointer before use
+  if (data == NULL) {
+    // Handle error case
+    logError("NULL data pointer received");
+    return;
+  }
+  
+  // Safe to dereference after check
+  processValue(data->value);
+}
+
+// JavaScript/TypeScript with null checking
+function processUserData(user) {
+  // Check for null/undefined before accessing properties
+  if (!user) {
+    console.error('User data is null or undefined');
+    return;
+  }
+  
+  // Optional chaining in modern JavaScript/TypeScript
+  const userName = user?.name || 'Unknown';
+  
+  // Nullish coalescing for default values
+  const userRole = user?.role ?? 'guest';
+  
+  // Process user data...
+}
+
+// TypeScript with strict null checking
+function getDataLength(data: string | null): number {
+  // Compiler enforces null check with strictNullChecks
+  if (data === null) {
+    return 0;
+  }
+  
+  return data.length; // Safe, we've checked for null
+}
+```
+
+```bad_example
+// C/C++ example with NULL dereference vulnerability
+void processData(Data* data) {
+  // VULNERABLE: No NULL check before dereferencing
+  int value = data->value; // Crashes if data is NULL
+  
+  // Process value...
+}
+
+// JavaScript/TypeScript with potential null dereference
+function processUserData(user) {
+  // VULNERABLE: No check for null/undefined
+  const userName = user.name; // TypeError if user is null/undefined
+  const userRole = user.preferences.role; // Nested property access is even riskier
+  
+  // Process user data...
+}
+
+// TypeScript example without proper null handling
+function getDataLength(data: string | null): number {
+  // VULNERABLE: No null check with union type
+  return data.length; // Compiler error with strictNullChecks or runtime error
+}
+```
+
+**Looking at this codebase:**
+- Check for proper null/undefined handling in JavaScript/TypeScript code
+- Verify that objects are checked for existence before accessing their properties
+- Look for optional chaining and nullish coalescing operators in modern code
+- Ensure that function parameters are validated before use
+- Check for proper error handling around potentially null values
+- In TypeScript code, consider enabling strictNullChecks in tsconfig.json

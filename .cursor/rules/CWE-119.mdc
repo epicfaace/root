@@ -1,0 +1,89 @@
+---
+description: Guidance to prevent CWE-119 Improper Restriction of Operations within the Bounds of a Memory Buffer
+ruleType: Agent Requested
+globs: ["**/*.{c,cpp,h,hpp}"]
+---
+
+### CWE-119: Improper Restriction of Operations within the Bounds of a Memory Buffer
+
+This vulnerability occurs when software performs operations on a memory buffer, but it can read from or write to memory locations outside of the intended boundary of the buffer, potentially leading to crashes, data corruption, or code execution.
+
+**Prevention Guidance:**
+- Use memory-safe languages whenever possible (JavaScript, TypeScript, Python, Rust, etc.)
+- Implement bounds checking before accessing arrays or buffers
+- Use safe, length-checking alternatives to unsafe functions
+- Allocate sufficiently sized buffers for all operations
+- Validate all input lengths before copying data into buffers
+- Use static analysis tools to detect potential buffer issues
+- Avoid pointer arithmetic when possible
+- If using C/C++, consider safe string/buffer handling libraries
+
+```good_example
+// C example with proper bounds checking
+void copyData(char* destination, size_t destSize, const char* source) {
+  if (destination == NULL || source == NULL) {
+    return;
+  }
+  
+  // Calculate source length
+  size_t sourceLen = strlen(source);
+  
+  // Check if destination buffer is large enough
+  if (destSize <= sourceLen) {
+    // Handle error - buffer too small
+    printf("Destination buffer too small\n");
+    return;
+  }
+  
+  // Copy with bounds checking
+  strncpy(destination, source, destSize - 1);
+  destination[destSize - 1] = '\0'; // Ensure null termination
+}
+
+// C++ example using safe alternatives
+#include <string>
+#include <vector>
+
+void processingData(const std::vector<int>& data, size_t index) {
+  // Vector bounds checking with .at()
+  if (index < data.size()) {
+    int value = data.at(index); // .at() does bounds checking
+    // Process value...
+  } else {
+    // Handle out-of-bounds case
+  }
+  
+  // Using std::string instead of char arrays
+  std::string input = getUserInput();
+  std::string output = "Result: " + input;
+  // No buffer overflow concerns with std::string
+}
+```
+
+```bad_example
+// C example with buffer overflow vulnerability
+void copyData(char* destination, const char* source) {
+  // VULNERABLE: No bounds checking
+  strcpy(destination, source);
+  // If source is larger than destination, buffer overflow occurs
+}
+
+// C example with off-by-one error
+void fillBuffer(char* buffer, size_t size, char fillChar) {
+  // VULNERABLE: Off-by-one error in loop condition
+  for (size_t i = 0; i <= size; i++) { // Should be i < size
+    buffer[i] = fillChar;
+  }
+  // Writes one byte past the end of the buffer
+}
+
+// C++ example with unsafe array access
+void processData(int* data, size_t size, int index) {
+  // VULNERABLE: No bounds checking before array access
+  int value = data[index];
+  // If index >= size, this is out-of-bounds
+}
+```
+
+**Note:**
+While this vulnerability primarily affects languages with manual memory management like C and C++, the principles of bounds checking and proper buffer management are important security concepts for all developers to understand.

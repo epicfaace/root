@@ -1,0 +1,74 @@
+---
+description: Guidance to prevent CWE-94 Code Injection
+ruleType: Agent Requested
+globs: ["**/*.{js,jsx,ts,tsx}"]
+---
+
+### CWE-94: Improper Control of Generation of Code ('Code Injection')
+
+Code Injection occurs when an application dynamically generates code from user-supplied input without proper validation, allowing attackers to execute arbitrary code within the application's context.
+
+**Prevention Guidance:**
+- Avoid dynamically generating code from user input whenever possible
+- Never use eval(), new Function(), setTimeout/setInterval with string arguments, or similar functions with user input
+- Use safer alternatives like JSON.parse() instead of eval() for data parsing
+- Implement a strict allow-list for any user input that must be used in code generation
+- Apply the principle of least privilege when executing dynamic code
+- Consider using sandboxed environments for executing dynamic code
+- Use static analysis tools to detect potentially dangerous code patterns
+
+```good_example
+// Safe alternative to eval for JSON parsing
+function parseUserData(jsonString) {
+  try {
+    // Use JSON.parse instead of eval
+    const data = JSON.parse(jsonString);
+    return data;
+  } catch (error) {
+    // Handle parsing errors
+    console.error('Invalid JSON:', error);
+    return null;
+  }
+}
+
+// Safe alternative to dynamic function creation
+function calculateExpression(a, b, operation) {
+  // Use a switch statement instead of dynamic code execution
+  switch (operation) {
+    case 'add': return a + b;
+    case 'subtract': return a - b;
+    case 'multiply': return a * b;
+    case 'divide': return b !== 0 ? a / b : null;
+    default: return null;
+  }
+}
+```
+
+```bad_example
+// VULNERABLE: Using eval with user input
+function parseUserData(jsonString) {
+  // DANGEROUS: Direct execution of user input
+  const data = eval('(' + jsonString + ')');
+  return data;
+}
+
+// VULNERABLE: Dynamic function creation
+function calculateExpression(a, b, operation) {
+  // DANGEROUS: Creates a function from user input
+  const calculator = new Function('a', 'b', `return a ${operation} b;`);
+  return calculator(a, b);
+}
+
+// VULNERABLE: setTimeout with string argument
+function delayedExecution(userCode) {
+  // DANGEROUS: Executes user code after delay
+  setTimeout(userCode, 1000);
+}
+```
+
+**Looking at this codebase:**
+- Scan for uses of eval(), new Function(), setTimeout/setInterval with string arguments
+- Check for dynamically constructed React components using dangerouslySetInnerHTML
+- Look for template literals that might include user input in code contexts
+- Pay attention to any custom interpreters or dynamic script loading in the application
+- Be cautious when manipulating the DOM directly with user input

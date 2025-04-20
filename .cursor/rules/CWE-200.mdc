@@ -1,0 +1,111 @@
+---
+description: Guidance to prevent CWE-200 Exposure of Sensitive Information to an Unauthorized Actor
+ruleType: Always
+globs: ["**/*.{js,jsx,ts,tsx}"]
+---
+
+### CWE-200: Exposure of Sensitive Information to an Unauthorized Actor
+
+This vulnerability occurs when an application unintentionally discloses sensitive information to unauthorized parties through various means such as error messages, logs, or insecure data handling.
+
+**Prevention Guidance:**
+- Implement proper access controls for all sensitive information
+- Minimize the collection and storage of sensitive data
+- Use appropriate encryption for sensitive data both in transit and at rest
+- Configure proper error handling to avoid exposing system details in error messages
+- Implement secure logging practices that don't record sensitive information
+- Remove sensitive data from responses (PII, credentials, internal paths, etc.)
+- Use HTTP security headers to prevent information leakage
+- Apply the principle of least privilege for data access
+- Implement proper session management and data isolation
+
+```good_example
+// Proper error handling without information disclosure
+app.use((err, req, res, next) => {
+  // Log detailed error for internal debugging (not exposed to users)
+  logger.error('Internal error:', {
+    error: err.message,
+    stack: err.stack,
+    requestId: req.id
+  });
+  
+  // Return generic error message to client
+  return res.status(500).json({
+    error: 'An unexpected error occurred',
+    requestId: req.id
+  });
+});
+
+// Proper data filtering before sending to client
+function getUserProfile(userId) {
+  const user = await User.findById(userId);
+  
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+  
+  // Only return non-sensitive fields
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    profileImage: user.profileImage,
+    joinDate: user.joinDate
+  };
+  
+  // Sensitive fields like password, email, ssn, etc. are not included
+}
+
+// Secure storage of sensitive data
+const userSchema = new mongoose.Schema({
+  username: String,
+  email: String,
+  // Hash passwords, never store in plaintext
+  password: {
+    type: String,
+    select: false // Prevents password from being returned in queries by default
+  }
+});
+```
+
+```bad_example
+// VULNERABLE: Detailed error exposure
+app.use((err, req, res, next) => {
+  // VULNERABLE: Exposing detailed error information to client
+  return res.status(500).json({
+    error: err.message,
+    stack: err.stack,
+    database: process.env.DB_CONNECTION_STRING
+  });
+});
+
+// VULNERABLE: Returning sensitive data
+function getUserProfile(userId) {
+  const user = await User.findById(userId);
+  
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+  
+  // VULNERABLE: Returning all user data including sensitive information
+  return user;
+  // This could include password hash, email, address, SSN, etc.
+}
+
+// VULNERABLE: Insecure logging
+function processPayment(user, creditCard) {
+  // VULNERABLE: Logging sensitive information
+  console.log(`Processing payment for ${user.name} with card: ${creditCard.number}`);
+  
+  // Process payment...
+}
+```
+
+**Looking at this codebase:**
+- Review error handling in backend routes and services
+- Check for proper data filtering in API responses
+- Verify that sensitive data like passwords and tokens are properly protected
+- Look for insecure logging that might capture sensitive information
+- Ensure environment variables with secrets aren't exposed to clients
+- Check for proper access controls around sensitive user information
+- Verify that debugging information isn't exposed in production environments

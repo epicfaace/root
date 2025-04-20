@@ -1,0 +1,111 @@
+---
+description: Guidance to prevent CWE-502 Deserialization of Untrusted Data
+ruleType: Agent Requested
+globs: ["**/backend/**/*.{js,ts}", "**/services/**/*.{js,ts}"]
+---
+
+### CWE-502: Deserialization of Untrusted Data
+
+Deserialization of Untrusted Data occurs when an application deserializes untrusted data without sufficient verification, potentially allowing attackers to execute arbitrary code, conduct injection attacks, or bypass security controls.
+
+**Prevention Guidance:**
+- Avoid deserializing data from untrusted sources whenever possible
+- Use data format-specific parsers instead of general-purpose serialization mechanisms
+- Implement integrity checks (digital signatures, HMAC) to verify data hasn't been tampered with
+- Apply strict type checking and schema validation before deserialization
+- Use safer alternatives like JSON.parse() with schema validation instead of eval() or Object.deserialize()
+- Never deserialize objects to determine control flow or authentication/authorization decisions
+- Implement application-level allowlists for classes that can be deserialized
+- Monitor and log deserialization operations for unusual patterns
+
+```good_example
+// Using JSON with schema validation (Zod)
+import { z } from 'zod';
+
+// Define schema for expected data structure
+const UserDataSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string().min(3).max(50),
+  email: z.string().email(),
+  role: z.enum(['user', 'admin']),
+  preferences: z.object({
+    theme: z.enum(['light', 'dark', 'system']),
+    notifications: z.boolean()
+  }).optional()
+});
+
+// Safe deserialization with validation
+function processUserData(jsonString) {
+  try {
+    // Parse JSON string to object
+    const data = JSON.parse(jsonString);
+    
+    // Validate against schema
+    const validatedData = UserDataSchema.parse(data);
+    
+    // Safe to use validatedData now
+    return validatedData;
+  } catch (error) {
+    // Handle validation or parsing errors
+    console.error('Invalid data:', error);
+    throw new Error('Invalid user data format');
+  }
+}
+
+// Alternative: Using JSON Web Tokens with verification
+import jwt from 'jsonwebtoken';
+
+function verifyJwtToken(token) {
+  try {
+    // Verify signature and decrypt payload
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Additional validation can be applied here
+    return decoded;
+  } catch (error) {
+    console.error('JWT verification failed:', error);
+    throw new Error('Invalid or expired token');
+  }
+}
+```
+
+```bad_example
+// VULNERABLE: Unsafe deserialization in Node.js
+const serialize = require('node-serialize');
+
+function processUserData(serializedString) {
+  // VULNERABLE: Deserializing without validation
+  const data = serialize.unserialize(serializedString);
+  
+  // An attacker could craft malicious serialized data with code execution
+  return data;
+}
+
+// VULNERABLE: Evaluating JSON with eval
+function processConfig(jsonString) {
+  // VULNERABLE: Using eval to parse JSON
+  const config = eval('(' + jsonString + ')');
+  
+  // An attacker could insert arbitrary code in the JSON string
+  return config;
+}
+
+// VULNERABLE: Deserializing without validation
+function loadUserState(base64State) {
+  const serialized = Buffer.from(base64State, 'base64').toString();
+  const userData = JSON.parse(serialized);
+  
+  // VULNERABLE: No validation of structure or content
+  // Attacker could provide unexpected data structure
+  
+  return userData;
+}
+```
+
+**Looking at this codebase:**
+- Look for deserialization of data from clients, especially in APIs
+- Check for proper validation of JSON data before processing
+- Verify JWT token handling in authentication flows
+- Ensure all data formats from external sources are properly validated
+- Watch for custom serialization/deserialization mechanisms
+- Check for proper validation when reading configuration data

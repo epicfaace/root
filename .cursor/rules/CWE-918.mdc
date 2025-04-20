@@ -1,0 +1,121 @@
+---
+description: Guidance to prevent CWE-918 Server-Side Request Forgery (SSRF)
+ruleType: Agent Requested
+globs: ["**/backend/**/*.{js,ts}", "**/services/**/*.{js,ts}"]
+---
+
+### CWE-918: Server-Side Request Forgery (SSRF)
+
+Server-Side Request Forgery (SSRF) occurs when an application fetches remote resources based on user-supplied input without sufficient validation, potentially allowing attackers to access internal services, scan networks, or exploit other server-side components.
+
+**Prevention Guidance:**
+- Validate and sanitize all user-supplied URLs before making requests
+- Implement a strict allow-list of permitted domains, protocols, and ports
+- Deny requests to private IP ranges, localhost, and internal domains by default
+- Use URL parsing libraries to decompose and validate URLs properly
+- Implement network-level segmentation to restrict server access to internal resources
+- Set low timeouts on outbound requests to prevent scanning
+- Disable HTTP redirects or implement redirect limits
+- Use dedicated service accounts with minimal privileges for external requests
+- Log and monitor all outbound requests
+
+```good_example
+// URL validation with allow-list approach
+const url = require('url');
+const fetch = require('node-fetch');
+const isIpPrivate = require('is-private-ip');
+
+async function fetchExternalResource(urlString) {
+  try {
+    // Parse the URL
+    const parsedUrl = new URL(urlString);
+    
+    // Check protocol (only allow http/https)
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      throw new Error('Invalid URL protocol');
+    }
+    
+    // Check if domain is in allowed list
+    const allowedDomains = ['api.trusted-service.com', 'cdn.trusted-content.com'];
+    if (!allowedDomains.includes(parsedUrl.hostname)) {
+      throw new Error('Domain not in allowed list');
+    }
+    
+    // Check if hostname resolves to private IP
+    const ipAddress = await dns.resolve4(parsedUrl.hostname);
+    if (ipAddress.some(ip => isIpPrivate(ip) || ip === '127.0.0.1')) {
+      throw new Error('Resolved to private IP address');
+    }
+    
+    // Set timeout to prevent scanning
+    const response = await fetch(urlString, { 
+      timeout: 5000,
+      redirect: 'error' // Prevent redirects to internal resources
+    });
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching resource:', error);
+    throw new Error('Failed to fetch external resource');
+  }
+}
+
+// Alternative: Using a proxy service for external requests
+async function fetchThroughProxy(urlString) {
+  // Send request to proxy service that enforces security controls
+  const response = await fetch('https://secure-proxy.company.com/fetch', {
+    method: 'POST',
+    body: JSON.stringify({ url: urlString }),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  
+  return await response.json();
+}
+```
+
+```bad_example
+// VULNERABLE: No URL validation
+const axios = require('axios');
+
+async function fetchExternalResource(urlString) {
+  try {
+    // VULNERABLE: No validation of user-supplied URL
+    // Attacker could supply URLs like:
+    // - http://localhost:8080/admin
+    // - http://internal-service.local/api/sensitive-data
+    // - http://169.254.169.254/latest/meta-data/ (AWS metadata service)
+    
+    const response = await axios.get(urlString);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching resource:', error);
+    throw new Error('Failed to fetch external resource');
+  }
+}
+
+// VULNERABLE: Partial validation with regex
+function validateUrl(urlString) {
+  // VULNERABLE: Insufficient URL validation
+  // This only checks for http/https protocol but doesn't prevent internal URLs
+  const urlPattern = /^https?:\/\/.+/i;
+  return urlPattern.test(urlString);
+}
+
+async function fetchWebhook(urlString) {
+  if (validateUrl(urlString)) {
+    // VULNERABLE: Still allows internal URLs that match the pattern
+    const response = await axios.get(urlString);
+    return response.data;
+  } else {
+    throw new Error('Invalid URL');
+  }
+}
+```
+
+**Looking at this codebase:**
+- Check for HTTP client usage (fetch, axios, request, etc.) in backend services
+- Identify places where URLs or hostnames are accepted from user input
+- Verify that proper validation is in place for all external requests
+- Look for webhook functionality, API integrations, or image/content fetching
+- Check for proper network segmentation between services
+- Verify URL parsing implementation in network-related code

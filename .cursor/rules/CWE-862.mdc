@@ -1,0 +1,74 @@
+---
+description: Guidance to prevent CWE-862 Missing Authorization
+ruleType: Agent Requested
+globs: ["**/backend/routes/**/*.{js,ts}", "**/router/**/*.{js,ts}"]
+---
+
+### CWE-862: Missing Authorization
+
+Missing Authorization occurs when an application does not perform authorization checks before allowing access to sensitive functionality or resources, enabling attackers to perform actions they should not be permitted to do.
+
+**Prevention Guidance:**
+- Implement proper authorization checks for all sensitive operations
+- Use role-based access control (RBAC) or attribute-based access control (ABAC)
+- Apply the principle of least privilege
+- Centralize authorization logic in middleware or dedicated services
+- Implement consistent checks across all routes and endpoints
+- Regularly audit authorization controls
+- Don't rely solely on hiding functionality (security through obscurity)
+- Test authorization with different user roles
+
+```good_example
+// Express middleware for role-based authorization
+function requireRole(role) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    if (req.user.role !== role && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Insufficient privileges' });
+    }
+    
+    next();
+  };
+}
+
+// Using the middleware to protect routes
+app.get('/api/users', requireRole('admin'), (req, res) => {
+  // Only admins can access this endpoint
+  // ...
+});
+
+app.post('/api/applications/:id/review', requireRole('reviewer'), (req, res) => {
+  // Only reviewers and admins can access this endpoint
+  // ...
+});
+```
+
+```bad_example
+// VULNERABLE: No authorization check
+app.get('/api/users', (req, res) => {
+  // Missing authorization check - any authenticated user can access all user data
+  db.collection('users').find().toArray()
+    .then(users => res.json(users));
+});
+
+// VULNERABLE: Inconsistent authorization
+app.post('/api/applications/:id/review', async (req, res) => {
+  // Authentication check but no authorization check
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  // Missing check for reviewer role - any authenticated user can review applications
+  // ...
+});
+```
+
+**Looking at this codebase:**
+- Ensure all API routes in the backend implement proper authorization checks
+- Check for consistent use of authentication middleware across endpoints
+- Verify that sensitive operations (especially admin functions) have proper authorization
+- Look for routes with parameters (like IDs) to ensure they verify ownership/access
+- Pay special attention to routes related to user management, forms, and reviews

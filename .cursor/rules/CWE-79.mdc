@@ -1,0 +1,46 @@
+---
+description: Guidance to prevent CWE-79 Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')
+ruleType: Agent Requested
+globs: ["**/*.{js,jsx,ts,tsx,html}"]
+---
+
+### CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')
+
+Cross-Site Scripting (XSS) occurs when an application includes untrusted data in a web page without proper validation or escaping, allowing attackers to inject client-side scripts into web pages viewed by other users.
+
+**Prevention Guidance:**
+- Always sanitize and validate user inputs before rendering them in the browser
+- Use context-appropriate encoding/escaping when inserting user data into HTML, JavaScript, CSS, or URLs
+- Implement Content Security Policy (CSP) headers
+- Use React's JSX or similar frameworks that automatically escape content by default
+- Avoid using dangerous JavaScript functions like `innerHTML`, `outerHTML`, `document.write()`, or `eval()`
+
+```good_example
+// React - Uses automatic escaping by default
+function Comment({ userComment }) {
+  return <div className="comment">{userComment}</div>;
+}
+
+// If you need to render HTML content in React, use a sanitization library
+import DOMPurify from 'dompurify';
+
+function SafeHTML({ htmlContent }) {
+  const sanitizedHTML = DOMPurify.sanitize(htmlContent);
+  return <div dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />;
+}
+```
+
+```bad_example
+// Dangerous - direct DOM manipulation without sanitization
+function displayComment(userComment) {
+  document.getElementById('comments').innerHTML += userComment; // Vulnerable to XSS
+}
+
+// Dangerous - direct jQuery insertion without sanitization
+$('#comments').html(userComment); // Vulnerable to XSS
+```
+
+**Looking at this codebase:**
+- When working with FormPage components, ensure all user-generated content is properly sanitized
+- Be careful when displaying data received from APIs in the frontend components
+- Avoid using dangerouslySetInnerHTML without proper sanitization

@@ -1,0 +1,92 @@
+---
+description: Guidance to prevent CWE-77 Command Injection
+ruleType: Agent Requested
+globs: ["**/backend/**/*.{js,ts}", "**/services/**/*.{js,ts}", "**/utils/**/*.{js,ts}", "**/scripts/**/*.{js,ts,py}"]
+---
+
+### CWE-77: Improper Neutralization of Special Elements used in a Command ('Command Injection')
+
+Command Injection occurs when an application incorporates user-supplied input as part of a command that is executed by the application, allowing attackers to execute arbitrary commands.
+
+**Prevention Guidance:**
+- Avoid using functions that invoke command interpreters when possible
+- Use language-specific libraries or APIs instead of executing system commands
+- If command execution is necessary, use parameterized functions instead of string concatenation
+- Implement strict input validation using whitelists for allowed commands and arguments
+- Sanitize and escape all user inputs used in command construction
+- Run commands with minimal privileges in isolated environments
+- Log all command executions and implement proper error handling
+
+```good_example
+// Node.js example with execFile (safer) and proper parameter handling
+const { execFile } = require('child_process');
+
+function processFile(filename) {
+  // Validate filename (implementation not shown)
+  if (!isValid(filename)) {
+    throw new Error('Invalid filename');
+  }
+  
+  // Use execFile with array of arguments instead of shell string
+  return new Promise((resolve, reject) => {
+    execFile('process_script', [filename, '--safe-mode'], (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout);
+    });
+  });
+}
+
+// Python example with subprocess.run and proper parameter usage
+import subprocess
+import shlex
+
+def process_file(filename):
+    # Validate filename (implementation not shown)
+    if not is_valid(filename):
+        raise ValueError("Invalid filename")
+    
+    # Use subprocess.run with list of arguments, not shell=True
+    result = subprocess.run(
+        ["process_script", filename, "--safe-mode"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+    return result.stdout
+```
+
+```bad_example
+// Node.js example with vulnerable command construction
+const { exec } = require('child_process');
+
+function processFile(filename) {
+  // VULNERABLE: Direct concatenation of user input into command string
+  const command = `process_script ${filename} --safe-mode`;
+  
+  // Attacker could provide: "valid.txt; rm -rf /" to execute arbitrary commands
+  return new Promise((resolve, reject) => {
+    exec(command, (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout);
+    });
+  });
+}
+
+// Python example with vulnerable shell=True usage
+import subprocess
+
+def process_file(filename):
+    # VULNERABLE: Using shell=True with user input in command string
+    command = f"process_script {filename} --safe-mode"
+    
+    # Attacker could provide: "valid.txt; rm -rf /" to execute arbitrary commands
+    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    return result.stdout
+```
+
+**Looking at this codebase:**
+- Check all Python scripts and JavaScript/TypeScript files for command execution
+- Pay special attention to scripts in the scripts/ directory
+- Review any utility functions that may execute commands
+- Look for use of child_process.exec, child_process.spawn, or subprocess modules
+- Verify all command executions use proper parameter handling and input validation

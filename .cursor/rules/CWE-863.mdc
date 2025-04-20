@@ -1,0 +1,147 @@
+---
+description: Guidance to prevent CWE-863 Incorrect Authorization
+ruleType: Agent Requested
+globs: ["**/backend/routes/**/*.{js,ts}", "**/router/**/*.{js,ts}"]
+---
+
+### CWE-863: Incorrect Authorization
+
+Incorrect Authorization occurs when an application performs authorization checks incorrectly or insufficiently, potentially allowing users to access resources or perform actions that should be restricted.
+
+**Prevention Guidance:**
+- Implement proper access control checks for all protected resources and operations
+- Use consistent authorization mechanisms throughout the application
+- Implement role-based access control (RBAC) with clearly defined roles and permissions
+- Verify authorization at multiple levels (route, controller, service)
+- Apply the principle of deny by default and require explicit permission
+- Separate authentication from authorization concerns
+- Implement proper object-level authorization (users can only access their own data)
+- Use parameterized authorization that considers resource ownership
+- Regularly audit authorization controls
+
+```good_example
+// Express middleware for consistent RBAC
+const ROLES = {
+  USER: 'user',
+  ADMIN: 'admin',
+  REVIEWER: 'reviewer'
+};
+
+// Middleware for role-based authorization
+function requireRole(allowedRoles) {
+  return (req, res, next) => {
+    // First verify authentication
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // Then check role-based authorization
+    if (!allowedRoles.includes(req.user.role)) {
+      logger.warn(`Unauthorized access attempt: User ${req.user.id} with role ${req.user.role} attempted to access ${req.path}`);
+      return res.status(403).json({ error: 'Insufficient privileges' });
+    }
+    
+    next();
+  };
+}
+
+// Middleware for resource ownership verification
+function requireOwnership(resourceType) {
+  return async (req, res, next) => {
+    try {
+      // Get resource ID from request
+      const resourceId = req.params.id;
+      
+      // Find the resource
+      const resource = await db.collection(resourceType).findOne({ _id: resourceId });
+      
+      if (!resource) {
+        return res.status(404).json({ error: 'Resource not found' });
+      }
+      
+      // Check ownership
+      if (resource.userId !== req.user.id && req.user.role !== ROLES.ADMIN) {
+        logger.warn(`Unauthorized access attempt: User ${req.user.id} attempted to access ${resourceType}:${resourceId} owned by ${resource.userId}`);
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      // Add resource to request for later use
+      req.resource = resource;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// Using the middleware
+app.get('/api/applications', 
+  authenticateUser,
+  requireRole([ROLES.ADMIN, ROLES.REVIEWER]),
+  (req, res) => {
+    // Only admins and reviewers can list all applications
+    // ...
+  }
+);
+
+app.put('/api/applications/:id',
+  authenticateUser,
+  requireOwnership('applications'),
+  (req, res) => {
+    // User can only edit their own applications
+    // ...
+  }
+);
+```
+
+```bad_example
+// VULNERABLE: Inconsistent authorization
+app.get('/api/applications', authenticateUser, (req, res) => {
+  // VULNERABLE: No role check for listing applications
+  // Any authenticated user can see all applications
+  // ...
+});
+
+// VULNERABLE: No resource ownership verification
+app.put('/api/applications/:id', authenticateUser, async (req, res) => {
+  try {
+    const application = await db.collection('applications').findOne({ _id: req.params.id });
+    
+    if (!application) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+    
+    // VULNERABLE: No ownership check
+    // Any authenticated user can edit any application
+    
+    // Update application...
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// VULNERABLE: Client-side authorization
+app.delete('/api/users/:id', authenticateUser, async (req, res) => {
+  try {
+    // VULNERABLE: Relying on client-provided role information
+    if (req.body.isAdmin) {
+      // Delete user...
+      return res.json({ success: true });
+    } else {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+**Looking at this codebase:**
+- Check for proper authorization checks in all routes
+- Verify that object ownership is checked before allowing modifications
+- Look for consistent use of role-based access controls
+- Ensure that authorization is implemented at the server, not relying on client claims
+- Check for horizontal privilege escalation possibilities (accessing other users' data)
+- Verify that proper access controls exist for APIs used by different user types

@@ -1,0 +1,91 @@
+---
+description: Guidance to prevent CWE-798 Use of Hard-coded Credentials
+ruleType: Always
+globs: ["**/*.{js,jsx,ts,tsx}"]
+---
+
+### CWE-798: Use of Hard-coded Credentials
+
+This vulnerability occurs when an application contains hard-coded credentials (passwords, API keys, encryption keys, etc.) within its source code, allowing anyone with access to the code to discover and potentially misuse these credentials.
+
+**Prevention Guidance:**
+- Never hard-code credentials in source code
+- Use environment variables or secure configuration systems for credentials
+- Implement proper secrets management with tools like AWS Secrets Manager, HashiCorp Vault, etc.
+- Regularly rotate credentials and encryption keys
+- Use specific configuration files that are excluded from version control (.env files with .gitignore)
+- Implement proper access controls for configuration files
+- Consider using OAuth, JWT, or other token-based authentication instead of static credentials
+- Automatically scan for credentials in code using tools like git-secrets
+- Implement proper credential revocation processes
+
+```good_example
+// Using environment variables for credentials
+const AWS = require('aws-sdk');
+
+// Load credentials from environment variables
+const s3Client = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
+
+// Using a configuration file (not checked into version control)
+const config = require('./config'); // Import from a separate config file
+
+function connectToDatabase() {
+  return mongoose.connect(config.databaseUrl, {
+    user: config.dbUser,
+    pass: config.dbPassword
+  });
+}
+
+// Using a secrets manager
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+const secretClient = new SecretManagerServiceClient();
+
+async function getDatabaseCredentials() {
+  const [version] = await secretClient.accessSecretVersion({
+    name: 'projects/my-project/secrets/db-credentials/versions/latest'
+  });
+  
+  const credentials = JSON.parse(version.payload.data.toString());
+  return credentials;
+}
+```
+
+```bad_example
+// VULNERABLE: Hard-coded credentials
+const AWS = require('aws-sdk');
+
+// VULNERABLE: Credentials in source code
+const s3Client = new AWS.S3({
+  accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+  secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+  region: 'us-west-2'
+});
+
+// VULNERABLE: Hard-coded database connection string
+function connectToDatabase() {
+  return mongoose.connect(
+    'mongodb://admin:SuperSecretPassword123@database.example.com:27017/myapp'
+  );
+}
+
+// VULNERABLE: Hard-coded API keys
+const apiKey = 'AIzaSyDNlPytMHJFKVqnYWLEbqsk3NkLJeAhqN9';
+fetch(`https://api.example.com/data?key=${apiKey}`);
+
+// VULNERABLE: Hard-coded encryption key
+const encryptionKey = 'AABB1122CCDD3344';
+const encrypted = encrypt(data, encryptionKey);
+```
+
+**Looking at this codebase:**
+- Scan for hard-coded credentials in configuration files
+- Check for database connection strings that might contain credentials
+- Look for API keys, tokens, or secrets in source code
+- Verify proper use of environment variables for sensitive information
+- Review authentication mechanisms for hardcoded secrets
+- Check AWS/cloud service configurations for embedded credentials
+- Look for encryption keys or certificates embedded in the code
