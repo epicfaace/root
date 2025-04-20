@@ -1,0 +1,81 @@
+---
+description: Guidance to prevent CWE-434 Unrestricted Upload of File with Dangerous Type
+ruleType: Agent Requested
+globs: ["**/services/file_actions.ts", "**/utils/file_plugin.ts", "**/backend/routes/**/*.{js,ts}"]
+---
+
+### CWE-434: Unrestricted Upload of File with Dangerous Type
+
+This vulnerability occurs when an application allows users to upload files without properly restricting the types, sizes, or contents, potentially allowing execution of malicious code or overwriting critical files.
+
+**Prevention Guidance:**
+- Validate file extensions against a whitelist of allowed types
+- Verify file content (MIME type) in addition to the extension
+- Generate new filenames and never use user-supplied filenames directly
+- Store uploaded files outside the web root when possible
+- Implement file size limits to prevent denial of service
+- Set proper file permissions that don't allow execution
+- Use separate domains or CDNs for user-uploaded content
+- Scan uploads for malware when applicable
+- Process or re-encode uploads when possible (e.g., generate thumbnails for images)
+
+```good_example
+// TypeScript example with comprehensive file upload validation
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import fileType from 'file-type';
+
+async function handleFileUpload(file) {
+  // Check file size
+  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+  if (file.size > MAX_SIZE) {
+    throw new Error('File too large (max 5MB)');
+  }
+  
+  // Validate file extension against whitelist
+  const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf'];
+  const extension = path.extname(file.originalname).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(extension)) {
+    throw new Error('File type not allowed');
+  }
+  
+  // Verify file content type matches extension
+  const fileBuffer = await file.buffer();
+  const detectedType = await fileType.fromBuffer(fileBuffer);
+  
+  if (!detectedType || !['image/jpeg', 'image/png', 'application/pdf'].includes(detectedType.mime)) {
+    throw new Error('File content does not match extension');
+  }
+  
+  // Generate a new filename to prevent directory traversal or overwriting
+  const safeFilename = uuidv4() + extension;
+  const uploadDir = '/path/to/uploads';
+  const filePath = path.join(uploadDir, safeFilename);
+  
+  // Save file and return the new path
+  await fs.promises.writeFile(filePath, fileBuffer);
+  return { filename: safeFilename, path: filePath };
+}
+```
+
+```bad_example
+// VULNERABLE: Insufficient file upload validation
+function handleFileUpload(file) {
+  // VULNERABLE: No file type validation
+  
+  // VULNERABLE: Using original filename directly
+  const filePath = path.join('/uploads', file.originalname);
+  
+  // VULNERABLE: No content-type checking
+  fs.writeFileSync(filePath, file.buffer);
+  
+  return { path: filePath };
+}
+```
+
+**Looking at this codebase:**
+- Check file_actions.ts and file_plugin.ts for proper file validation
+- Ensure all upload endpoints implement comprehensive checks
+- Verify that user-supplied filenames are never used directly
+- Look for proper storage locations that prevent access to uploaded files
+- Confirm that file size limits are implemented to prevent DoS attacks

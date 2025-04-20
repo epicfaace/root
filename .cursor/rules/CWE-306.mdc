@@ -1,0 +1,123 @@
+---
+description: Guidance to prevent CWE-306 Missing Authentication for Critical Function
+ruleType: Agent Requested
+globs: ["**/backend/routes/**/*.{js,ts}", "**/router/**/*.{js,ts}"]
+---
+
+### CWE-306: Missing Authentication for Critical Function
+
+Missing Authentication for Critical Function occurs when an application does not perform any authentication for functionality that requires a provable user identity or consumes a significant amount of resources.
+
+**Prevention Guidance:**
+- Identify and document all critical functions in the application
+- Implement proper authentication mechanisms for all critical functions
+- Use a centralized authentication system or middleware
+- Apply the principle of complete mediation (check every access to protected resources)
+- Implement proper session management for authenticated users
+- Require re-authentication for highly sensitive operations
+- Ensure authentication cannot be bypassed through alternative paths
+- Test authentication controls thoroughly, including edge cases
+- Implement proper logging for authentication attempts and failures
+
+```good_example
+// Express router with authentication middleware
+const express = require('express');
+const router = express.Router();
+const { authenticateUser, requireAdmin } = require('../middleware/auth');
+
+// Authentication middleware for all routes in this router
+router.use(authenticateUser);
+
+// Routes that can be accessed by any authenticated user
+router.get('/profile', (req, res) => {
+  // User is already authenticated by middleware
+  res.json(req.user);
+});
+
+// Routes that require specific roles (admin)
+router.get('/users', requireAdmin, (req, res) => {
+  // User is authenticated and has admin role
+  // Fetch and return all users...
+});
+
+// Re-authentication for critical operations
+router.post('/password/change', authenticateUser, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    // Verify current password to re-authenticate user
+    const user = await User.findById(req.user.id).select('+password');
+    const isMatch = await user.comparePassword(currentPassword);
+    
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    
+    // Update password...
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// API key authentication for programmatic access
+router.post('/api/data', authenticateApiKey, (req, res) => {
+  // API key is validated in middleware
+  // Process data...
+});
+```
+
+```bad_example
+// VULNERABLE: No authentication for critical function
+const express = require('express');
+const router = express.Router();
+
+// VULNERABLE: Admin function without authentication
+router.get('/admin/dashboard', (req, res) => {
+  // VULNERABLE: Any user can access this admin route
+  // No authentication check
+  
+  // Fetch and return admin dashboard data...
+});
+
+// VULNERABLE: Deletion endpoint without authentication
+router.delete('/users/:id', (req, res) => {
+  // VULNERABLE: No authentication check before deleting user
+  const userId = req.params.id;
+  
+  // Delete user...
+  
+  res.json({ success: true });
+});
+
+// VULNERABLE: Payment processing without authentication
+router.post('/process-payment', (req, res) => {
+  // VULNERABLE: No authentication check before processing payment
+  const { amount, cardDetails } = req.body;
+  
+  // Process payment...
+  
+  res.json({ success: true });
+});
+
+// VULNERABLE: Password reset without proper authentication
+router.post('/password/reset', (req, res) => {
+  // VULNERABLE: Only requires email, no proper authentication
+  const { email } = req.body;
+  
+  // Reset password and send email...
+  
+  res.json({ success: true });
+});
+```
+
+**Looking at this codebase:**
+- Check all API endpoints for proper authentication requirements
+- Identify critical operations (user management, data deletion, financial transactions)
+- Verify that all admin functions require proper authentication
+- Look for routes that might bypass authentication checks
+- Check for consistent application of authentication middleware
+- Verify that sensitive operations require appropriate level of authentication
+- Check password reset/recovery flows for proper authentication
+- Look for authentication in file upload/download endpoints

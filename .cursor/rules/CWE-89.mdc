@@ -1,0 +1,53 @@
+---
+description: Guidance to prevent CWE-89 SQL Injection
+ruleType: Agent Requested
+globs: ["**/backend/**/*.{js,ts}", "**/models/**/*.{js,ts}", "**/routes/**/*.{js,ts}"]
+---
+
+### CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')
+
+SQL Injection occurs when untrusted data is concatenated into a SQL query without proper validation or parameterization, allowing attackers to modify the query's logic or structure.
+
+**Prevention Guidance:**
+- Never concatenate user input directly into SQL queries
+- Always use parameterized queries or prepared statements
+- Use an ORM (Object-Relational Mapping) library when possible
+- Validate and sanitize all user inputs
+- Implement least privilege for database accounts
+- Consider using stored procedures for complex queries
+- Escape special characters if parameterization is not possible (last resort only)
+
+```good_example
+// Using parameterized queries with MongoDB
+const findUser = async (username) => {
+  return await db.collection('users').findOne({ username: username });
+};
+
+// Using parameterized queries with SQL databases
+const getUserData = async (userId) => {
+  const query = 'SELECT * FROM users WHERE id = ?';
+  return await database.query(query, [userId]);
+};
+```
+
+```bad_example
+// Dangerous - direct string concatenation
+const getUserData = async (userId) => {
+  // VULNERABLE: SQL injection possible
+  const query = `SELECT * FROM users WHERE id = ${userId}`;
+  return await database.query(query);
+};
+
+// Dangerous - template literals without parameterization
+const findUser = async (username) => {
+  // VULNERABLE: NoSQL injection possible
+  return await db.collection('users').findOne({
+    $where: `this.username === '${username}'`
+  });
+};
+```
+
+**Looking at this codebase:**
+- When working with MongoDB in the backend models, ensure proper parameter handling
+- Check all routes that accept user input to ensure they use parameterized queries
+- Be cautious when building complex queries in the database services

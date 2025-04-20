@@ -1,0 +1,75 @@
+---
+description: Guidance to prevent CWE-352 Cross-Site Request Forgery (CSRF)
+ruleType: Agent Requested
+globs: ["**/backend/routes/**/*.{js,ts}", "**/src/**/*.{js,jsx,ts,tsx}"]
+---
+
+### CWE-352: Cross-Site Request Forgery (CSRF)
+
+Cross-Site Request Forgery (CSRF) occurs when an attacker tricks a victim's browser into making unwanted authenticated requests to a website where the user is already authenticated, potentially causing state-changing actions without the user's consent.
+
+**Prevention Guidance:**
+- Implement anti-CSRF tokens for all state-changing operations
+- Use the SameSite cookie attribute to restrict cookie use to same-site requests
+- Verify the Origin and Referer headers for incoming requests
+- Require re-authentication for sensitive operations
+- Use proper CORS (Cross-Origin Resource Sharing) configuration
+- Implement custom request headers that JavaScript must set
+- For APIs, move from cookies to token-based authentication with proper storage
+
+```good_example
+// Backend: Implementing CSRF protection in Express
+const csrf = require('csurf');
+const csrfProtection = csrf({ cookie: true });
+
+// Apply CSRF protection to routes
+app.post('/api/user/update', csrfProtection, (req, res) => {
+  // The request will be rejected without a valid CSRF token
+  // Process the request...
+});
+
+// Frontend: Including CSRF token in forms/requests
+function UserForm() {
+  return (
+    <form action="/api/user/update" method="POST">
+      <input type="hidden" name="_csrf" value={csrfToken} />
+      {/* Other form fields */}
+      <button type="submit">Update</button>
+    </form>
+  );
+}
+
+// For AJAX requests
+fetch('/api/user/update', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'CSRF-Token': csrfToken  // Include the token in headers
+  },
+  body: JSON.stringify(data)
+});
+```
+
+```bad_example
+// Backend: No CSRF protection
+app.post('/api/user/update', (req, res) => {
+  // VULNERABLE: This endpoint accepts requests from any origin
+  // without requiring a CSRF token
+  // Process the request...
+});
+
+// Frontend: Form without CSRF token
+function UserForm() {
+  return (
+    <form action="/api/user/update" method="POST">
+      {/* VULNERABLE: No CSRF token */}
+      <button type="submit">Update</button>
+    </form>
+  );
+}
+```
+
+**Looking at this codebase:**
+- Ensure all state-changing API endpoints in the backend routes implement CSRF protection
+- Verify that all forms in React components include proper CSRF tokens
+- Check the authentication mechanism to ensure it's protected against CSRF

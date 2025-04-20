@@ -1,0 +1,58 @@
+---
+description: Guidance to prevent CWE-125 Out-of-bounds Read
+ruleType: Agent Requested
+globs: ["**/*.{c,cpp,h,hpp}", "**/*.{js,ts}"]
+---
+
+### CWE-125: Out-of-bounds Read
+
+Out-of-bounds Read occurs when software reads data past the end or before the beginning of the intended buffer, potentially leading to information disclosure, crashes, or unpredictable behavior.
+
+**Prevention Guidance:**
+- Always validate array indices before accessing arrays
+- Use length-checking functions when processing strings or buffers
+- Leverage bounds-checking libraries or languages when possible
+- Implement proper input validation for array indices
+- Use static analysis tools to detect potential out-of-bounds reads
+- Be careful with pointer arithmetic and buffer access
+
+```good_example
+// JavaScript with proper bounds checking
+function getElementSafely(array, index) {
+  if (index >= 0 && index < array.length) {
+    return array[index];
+  } else {
+    // Handle error case
+    return null;
+  }
+}
+
+// C example with bounds checking
+void printElement(int* array, size_t arraySize, size_t index) {
+  if (index < arraySize) {
+    printf("Element at %zu is %d\n", index, array[index]);
+  } else {
+    printf("Index out of bounds\n");
+  }
+}
+```
+
+```bad_example
+// JavaScript without bounds checking
+function getElement(array, index) {
+  // VULNERABLE: No bounds checking
+  return array[index]; // Can return undefined or throw error
+}
+
+// C example without bounds checking
+void printElement(int* array, size_t index) {
+  // VULNERABLE: No verification that index is within bounds
+  printf("Element at %zu is %d\n", index, array[index]);
+}
+```
+
+**Looking at this codebase:**
+- When accessing arrays or collections, always verify indices are within valid ranges
+- Be careful when iterating through data structures with numeric indices
+- Validate user input that might be used as an index before accessing arrays
+- Even in JavaScript/TypeScript, out-of-bounds reads can cause unexpected behavior

@@ -1,0 +1,87 @@
+---
+description: Guidance to prevent CWE-20 Improper Input Validation
+ruleType: Always
+globs: ["**/*.{js,jsx,ts,tsx}"]
+---
+
+### CWE-20: Improper Input Validation
+
+Improper Input Validation occurs when an application fails to validate, filter, or sanitize user-supplied input before using it, potentially leading to various security vulnerabilities including injection attacks, buffer overflows, and more.
+
+**Prevention Guidance:**
+- Validate all input from untrusted sources (client side, API calls, files, etc.)
+- Implement both client-side and server-side validation
+- Apply the "accept known good" (whitelist) approach rather than "reject known bad" (blacklist)
+- Validate input for type, length, format, range, and expected patterns
+- Use schema validation libraries (Joi, Yup, Zod, JSON Schema, etc.)
+- Sanitize data before using it in sensitive operations
+- Apply context-specific validation based on how the data will be used
+- Validate at all trust boundaries (API endpoints, file uploads, etc.)
+
+```good_example
+// TypeScript with schema validation using Zod
+import { z } from 'zod';
+
+// Define validation schema
+const UserSchema = z.object({
+  username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/),
+  email: z.string().email(),
+  age: z.number().int().min(13).max(120).optional(),
+  role: z.enum(['user', 'admin', 'moderator']),
+});
+
+// Validate input data
+function processUserData(userData: unknown) {
+  try {
+    // Validate against schema
+    const validatedData = UserSchema.parse(userData);
+    
+    // If we get here, data is valid and typed correctly
+    saveToDatabase(validatedData);
+    return { success: true };
+  } catch (error) {
+    // Handle validation errors
+    console.error('Validation failed:', error);
+    return { success: false, errors: error.errors };
+  }
+}
+
+// Express route with validation
+app.post('/api/users', (req, res) => {
+  try {
+    const validatedData = UserSchema.parse(req.body);
+    // Process validated data...
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ success: false, errors: error.errors });
+  }
+});
+```
+
+```bad_example
+// VULNERABLE: No input validation
+function processUserData(userData) {
+  // VULNERABLE: No validation before using the data
+  saveToDatabase(userData);
+  return { success: true };
+}
+
+// VULNERABLE: Incomplete validation
+function createUser(userData) {
+  // VULNERABLE: Only checking if properties exist, not validating their content
+  if (!userData.username || !userData.email) {
+    return { success: false, error: 'Missing required fields' };
+  }
+  
+  // VULNERABLE: No validation of data types or formats
+  saveToDatabase(userData);
+  return { success: true };
+}
+```
+
+**Looking at this codebase:**
+- Check form handling in FormPage components to ensure proper validation
+- Verify that all API endpoints in the backend routes validate incoming data
+- Look for schema definitions that enforce proper validation rules
+- Ensure all user inputs (forms, URL parameters, file uploads) are validated
+- Pay special attention to critical functions like authentication, user creation, and data submission

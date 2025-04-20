@@ -1,0 +1,136 @@
+---
+description: Guidance to prevent CWE-287 Improper Authentication
+ruleType: Agent Requested
+globs: ["**/router/authenticatedRoute.ts", "**/services/auth_actions.ts", "**/store/auth/**/*.{js,ts}"]
+---
+
+### CWE-287: Improper Authentication
+
+Improper Authentication occurs when an application's authentication mechanisms are weak or incorrectly implemented, allowing attackers to impersonate legitimate users by bypassing or subverting the authentication process.
+
+**Prevention Guidance:**
+- Implement strong authentication mechanisms appropriate for the sensitivity of the application
+- Use well-tested authentication libraries rather than custom solutions
+- Enforce strong password policies (complexity, length, rotation when necessary)
+- Implement multi-factor authentication for sensitive systems
+- Use secure session management with proper timeout and invalidation
+- Protect against brute-force attacks with rate limiting and account lockouts
+- Securely store credentials using modern hashing algorithms with salts
+- Implement secure password reset mechanisms
+- Ensure all authentication attempts are logged for auditing
+
+```good_example
+// Using a well-tested authentication library (Passport.js with JWT)
+import passport from 'passport';
+import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+import bcrypt from 'bcrypt';
+
+// Set up JWT strategy
+const jwtOptions = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: process.env.JWT_SECRET,
+  expiresIn: '1h'
+};
+
+passport.use(new JwtStrategy(jwtOptions, async (payload, done) => {
+  try {
+    const user = await User.findById(payload.sub);
+    if (!user) {
+      return done(null, false);
+    }
+    return done(null, user);
+  } catch (error) {
+    return done(error, false);
+  }
+}));
+
+// Secure password handling
+async function validatePassword(plainPassword, hashedPassword) {
+  return await bcrypt.compare(plainPassword, hashedPassword);
+}
+
+async function hashPassword(password) {
+  const saltRounds = 12;
+  return await bcrypt.hash(password, saltRounds);
+}
+
+// Login with rate limiting
+const rateLimit = require('express-rate-limit');
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts
+  message: 'Too many login attempts, please try again after 15 minutes'
+});
+
+app.post('/api/login', loginLimiter, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    // Find user
+    const user = await User.findOne({ username });
+    if (!user) {
+      // Use constant time comparison to prevent timing attacks
+      await bcrypt.compare('dummy', '$2b$12$dummyhashfordummypassword');
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Verify password
+    const isValid = await validatePassword(password, user.password);
+    if (!isValid) {
+      // Log failed attempt
+      logger.warn(`Failed login attempt for user: ${username}`);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign({ sub: user.id, role: user.role }, jwtOptions.secretOrKey, {
+      expiresIn: jwtOptions.expiresIn
+    });
+    
+    // Log successful login
+    logger.info(`User logged in: ${username}`);
+    
+    return res.json({ token });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+```bad_example
+// VULNERABLE: Weak authentication implementation
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    // VULNERABLE: No input validation
+    
+    // VULNERABLE: Querying database with unsanitized input
+    const user = await User.findOne({ username });
+    
+    // VULNERABLE: Using simple string comparison for passwords
+    if (!user || user.password !== password) {
+      // VULNERABLE: No rate limiting for failed attempts
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // VULNERABLE: No token expiration
+    const token = jwt.sign({ userId: user.id }, 'hardcoded-secret');
+    
+    // VULNERABLE: No logging of authentication events
+    
+    return res.json({ token });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+**Looking at this codebase:**
+- Check authenticatedRoute.ts to ensure it implements proper JWT validation
+- Verify auth_actions.ts for secure authentication processes
+- Review authentication state management in store/auth
+- Look for proper session management and token handling
+- Ensure credentials are properly protected in transit and at rest
+- Verify that authentication is required for all sensitive operations

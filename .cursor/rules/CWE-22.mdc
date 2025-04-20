@@ -1,0 +1,59 @@
+---
+description: Guidance to prevent CWE-22 Path Traversal
+ruleType: Agent Requested
+globs: ["**/backend/**/*.{js,ts}", "**/services/file_actions.ts"]
+---
+
+### CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
+
+Path Traversal occurs when an application uses user-supplied input to access files and directories outside of the intended directory, potentially exposing sensitive files or executing malicious code.
+
+**Prevention Guidance:**
+- Validate and sanitize all file paths supplied by users
+- Use path canonicalization before validation (resolve all symbolic links, etc.)
+- Implement proper access controls for file operations
+- Use secure file handling libraries that prevent path traversal
+- Maintain a whitelist of allowed files/directories when possible
+- Avoid placing sensitive files in web-accessible directories
+- Use a secure sandbox for file operations when possible
+
+```good_example
+// Node.js example using path normalization and validation
+const path = require('path');
+const fs = require('fs');
+
+function getFile(userSuppliedPath) {
+  // Normalize the path to resolve any '..' or '.'
+  const normalizedPath = path.normalize(userSuppliedPath);
+  
+  // Define the base directory for allowed files
+  const baseDir = '/safe/directory/path';
+  
+  // Create the absolute path and verify it starts with baseDir
+  const absolutePath = path.resolve(baseDir, normalizedPath);
+  
+  if (!absolutePath.startsWith(baseDir)) {
+    throw new Error('Invalid path: Attempted path traversal');
+  }
+  
+  // Safe to access the file now
+  return fs.readFileSync(absolutePath);
+}
+```
+
+```bad_example
+// Dangerous - direct use of user input in file paths
+function getFile(userSuppliedPath) {
+  // VULNERABLE: No path validation or sanitization
+  const filePath = '/app/files/' + userSuppliedPath;
+  
+  // Attacker could supply '../../../etc/passwd' to access system files
+  return fs.readFileSync(filePath);
+}
+```
+
+**Looking at this codebase:**
+- Pay special attention to file operations in the file_actions.ts service
+- Verify all file upload/download operations restrict paths to intended directories
+- Check for uses of fs.readFile or similar functions that might accept user input
+- Ensure all file paths are properly validated before accessing the filesystem

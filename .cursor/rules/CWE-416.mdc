@@ -1,0 +1,70 @@
+---
+description: Guidance to prevent CWE-416 Use After Free
+ruleType: Agent Requested
+globs: ["**/*.{c,cpp,h,hpp}"]
+---
+
+### CWE-416: Use After Free
+
+Use After Free occurs when a program continues to use a pointer after it has been freed, which can lead to crashes, data corruption, or arbitrary code execution.
+
+**Prevention Guidance:**
+- Set pointers to NULL immediately after freeing them
+- Use memory-safe languages when possible (JavaScript, TypeScript, Python, etc.)
+- Implement proper resource management with RAII (Resource Acquisition Is Initialization) in C++
+- Use smart pointers and automatic memory management when available
+- Avoid returning references to freed memory
+- Leverage static analysis tools to detect potential use-after-free vulnerabilities
+- Consider using garbage collection or reference counting when appropriate
+
+```good_example
+// C example with proper pointer handling
+void process_data() {
+  char* buffer = (char*)malloc(100);
+  if (buffer == NULL) {
+    // Handle allocation failure
+    return;
+  }
+  
+  // Use buffer...
+  
+  free(buffer);
+  buffer = NULL; // Set to NULL after freeing
+  
+  // Any subsequent use of buffer will be obviously wrong
+  // if (buffer != NULL) { ... } will correctly evaluate to false
+}
+
+// C++ example with smart pointers (RAII)
+void process_data() {
+  std::unique_ptr<char[]> buffer(new char[100]);
+  
+  // Use buffer...
+  
+  // No need to manually free - will be automatically freed when out of scope
+}
+```
+
+```bad_example
+// C example with use-after-free vulnerability
+void process_data() {
+  char* buffer = (char*)malloc(100);
+  if (buffer == NULL) {
+    return;
+  }
+  
+  // Use buffer...
+  
+  free(buffer);
+  // VULNERABLE: buffer still points to freed memory
+  
+  // Some code later...
+  if (something_happened) {
+    // VULNERABLE: Using memory after it's been freed
+    buffer[0] = 'A'; // This is a use-after-free bug
+  }
+}
+```
+
+**Note:**
+While this vulnerability primarily affects languages with manual memory management like C and C++, the principle of avoiding dangling references applies to other contexts as well, such as ensuring database connections are properly closed before reuse.

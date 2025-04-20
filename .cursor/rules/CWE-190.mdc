@@ -1,0 +1,120 @@
+---
+description: Guidance to prevent CWE-190 Integer Overflow or Wraparound
+ruleType: Agent Requested
+globs: ["**/*.{js,ts,jsx,tsx,c,cpp,h,hpp}"]
+---
+
+### CWE-190: Integer Overflow or Wraparound
+
+Integer Overflow or Wraparound occurs when an arithmetic operation attempts to create a numeric value that exceeds the range that can be represented with a given number of bits, potentially leading to incorrect results, buffer overflows, or other vulnerabilities.
+
+**Prevention Guidance:**
+- Validate all numeric inputs before performing calculations
+- Use appropriate data types with sufficient range for expected values
+- Implement range checking before performing arithmetic operations
+- Consider using libraries designed to handle large integers safely
+- Be aware of implicit type conversions that might cause overflows
+- Check array indices derived from calculations to prevent out-of-bounds access
+- In low-level languages, use safe arithmetic operations that detect overflows
+- In JavaScript, be aware of limitations with Number.MAX_SAFE_INTEGER (2^53 - 1)
+
+```good_example
+// C example with overflow checking
+#include <limits.h>
+#include <stdbool.h>
+
+bool safeAdd(int a, int b, int* result) {
+  // Check for integer overflow
+  if ((b > 0 && a > INT_MAX - b) || (b < 0 && a < INT_MIN - b)) {
+    return false; // Overflow would occur
+  }
+  
+  *result = a + b;
+  return true;
+}
+
+// Safe buffer allocation
+void* allocateBuffer(size_t elementSize, size_t numElements) {
+  // Check for multiplication overflow
+  if (numElements > 0 && elementSize > SIZE_MAX / numElements) {
+    return NULL; // Overflow would occur
+  }
+  
+  size_t bufferSize = elementSize * numElements;
+  return malloc(bufferSize);
+}
+
+// JavaScript example with safe integer validation
+function safeMultiply(a, b) {
+  // Check if inputs are safe integers
+  if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b)) {
+    throw new Error('Inputs must be safe integers');
+  }
+  
+  const result = a * b;
+  
+  // Check if result is still a safe integer
+  if (!Number.isSafeInteger(result)) {
+    throw new Error('Integer overflow occurred');
+  }
+  
+  return result;
+}
+
+// Using BigInt for large integers in JavaScript
+function handleLargeNumbers(a, b) {
+  // Convert to BigInt to avoid overflow
+  const bigA = BigInt(a);
+  const bigB = BigInt(b);
+  
+  // Perform calculation with BigInt (no overflow concerns)
+  return bigA * bigB;
+}
+```
+
+```bad_example
+// C example with integer overflow vulnerability
+int calculateBufferSize(int width, int height) {
+  // VULNERABLE: No overflow check before multiplication
+  int bytes = width * height * 4; // Can overflow with large width/height
+  
+  return bytes;
+}
+
+void* allocateBuffer(int width, int height) {
+  // VULNERABLE: Using result of calculation without checking for overflow
+  int size = width * height * 4;
+  
+  // If overflow occurred, size might be much smaller than expected
+  return malloc(size);
+}
+
+// JavaScript example with integer overflow vulnerability
+function calculateTotal(prices) {
+  let total = 0;
+  
+  for (const price of prices) {
+    // VULNERABLE: No validation of input values
+    // If price is very large, total could exceed MAX_SAFE_INTEGER
+    total += price;
+  }
+  
+  return total;
+}
+
+// Vulnerable array access with potential overflow
+function accessArrayElement(array, index, offset) {
+  // VULNERABLE: No overflow check for index calculation
+  const position = index + offset; // Could overflow with large values
+  
+  return array[position]; // Could access out-of-bounds
+}
+```
+
+**Looking at this codebase:**
+- Check for proper bounds checking in numeric operations
+- Verify array index calculations for potential overflow
+- Look for proper validation of numeric inputs
+- Check for proper handling of large integers in JavaScript
+- Be careful with calculations used for memory allocation or buffer sizing
+- Consider using BigInt for large integer operations in JavaScript

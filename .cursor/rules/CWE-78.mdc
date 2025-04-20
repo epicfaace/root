@@ -1,0 +1,75 @@
+---
+description: Guidance to prevent CWE-78 OS Command Injection
+ruleType: Agent Requested
+globs: ["**/backend/**/*.{js,ts}", "**/services/**/*.{js,ts}", "**/utils/**/*.{js,ts}"]
+---
+
+### CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+
+OS Command Injection occurs when an application passes unsafe user-supplied data to a system shell, allowing attackers to execute arbitrary commands on the host operating system.
+
+**Prevention Guidance:**
+- Avoid calling OS commands when possible; use language-specific libraries instead
+- If OS commands are necessary, never include user input directly in command strings
+- Use command argument arrays instead of shell strings (e.g., execFile instead of exec)
+- Implement strict whitelisting for allowed commands and arguments
+- Validate and sanitize all user inputs used in command execution
+- Run commands with the lowest possible privileges
+- Use sandbox environments or containers to isolate command execution
+
+```good_example
+// Node.js example with child_process.execFile (safer)
+const { execFile } = require('child_process');
+
+function convertUserFile(filename) {
+  // Validate filename first (implementation not shown)
+  if (!isValidFilename(filename)) {
+    throw new Error('Invalid filename');
+  }
+  
+  // Use execFile with separate arguments array (safer)
+  return new Promise((resolve, reject) => {
+    execFile('convert', [filename, 'output.png'], (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout);
+    });
+  });
+}
+
+// Alternative: use built-in functionality instead of shell commands
+const fs = require('fs');
+
+function readUserFile(filename) {
+  // Validate filename first
+  if (!isValidFilename(filename)) {
+    throw new Error('Invalid filename');
+  }
+  
+  // Use built-in Node.js functionality instead of cat/type commands
+  return fs.readFileSync(filename, 'utf8');
+}
+```
+
+```bad_example
+// Node.js example with vulnerable command construction
+const { exec } = require('child_process');
+
+function convertUserFile(filename) {
+  // VULNERABLE: Directly inserting user input into command string
+  const command = `convert ${filename} output.png`;
+  
+  // Attacker could input: "valid.jpg; rm -rf /" to execute arbitrary commands
+  return new Promise((resolve, reject) => {
+    exec(command, (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout);
+    });
+  });
+}
+```
+
+**Looking at this codebase:**
+- Search for uses of child_process.exec, child_process.execSync, or similar functions
+- Check all external command executions in backend services and utilities
+- Make sure scripts that process user data don't pass it to shell commands
+- Verify that any file paths or arguments passed to commands are properly validated

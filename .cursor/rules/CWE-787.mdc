@@ -1,0 +1,41 @@
+---
+description: Guidance to prevent CWE-787 Out-of-bounds Write
+ruleType: Agent Requested
+globs: ["**/*.{c,cpp,h,hpp}"]
+---
+
+### CWE-787: Out-of-bounds Write
+
+Out-of-bounds Write occurs when software writes data past the end or before the beginning of the intended buffer, potentially leading to data corruption, crashes, or code execution.
+
+**Prevention Guidance:**
+- Use safe, bounds-checked alternatives to unsafe functions (e.g., `strncpy` instead of `strcpy`)
+- Implement proper buffer length checking before writing data
+- Leverage memory-safe languages when possible (JavaScript, TypeScript, Python, etc.)
+- Use static analysis tools to detect potential buffer overflows
+- Validate array indices before accessing arrays
+- Always check the size of the destination buffer against the size of the source data
+
+```good_example
+// C example - Using safe functions with length checking
+char buffer[100];
+const char* source = get_user_input();
+size_t sourceLen = strlen(source);
+
+if (sourceLen < sizeof(buffer)) {
+    strncpy(buffer, source, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0'; // Ensure null termination
+} else {
+    // Handle error: input too large
+}
+```
+
+```bad_example
+// C example - Dangerous without bounds checking
+char buffer[100];
+const char* source = get_user_input();
+strcpy(buffer, source); // Vulnerable to buffer overflow if source > 100 bytes
+```
+
+**Note:**
+While this vulnerability is primarily relevant for low-level languages with manual memory management (C/C++), the principles of validating sizes and preventing memory corruption apply to all software development.
